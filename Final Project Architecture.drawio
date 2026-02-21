@@ -1,0 +1,118 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36" version="29.5.1">
+  <diagram name="‫עמוד-1‬" id="YOsjHblZMEWO0cV2XSPo">
+    <mxGraphModel dx="2526" dy="743" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="vpc" parent="1" style="swimlane;whiteSpace=wrap;html=1;dashed=1;dashPattern=1 4;fontSize=24;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;startSize=0;" value="" vertex="1">
+          <mxGeometry height="640" width="1620" x="270" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="az1" parent="vpc" style="swimlane;whiteSpace=wrap;html=1;strokeColor=#007FFF;fillColor=none;align=center;verticalAlign=top;spacingTop=5;startSize=23;" value="AZ - us-east-1a" vertex="1">
+          <mxGeometry height="240" width="400" x="280" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="g1" parent="az1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" value="&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit;&quot;&gt;&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit;&quot;&gt;Gunicorn &amp;amp; django (in a single container)&lt;/font&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="100" x="30" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" parent="az1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;" value="Redis (as container)" vertex="1">
+          <mxGeometry height="60" width="100" x="260" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="az1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="119.5" as="sourcePoint" />
+            <mxPoint x="240" y="119.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="az2" parent="vpc" style="swimlane;whiteSpace=wrap;html=1;strokeColor=#007FFF;fillColor=none;align=center;verticalAlign=top;spacingTop=5;startSize=30;" value="AZ - us-east-1b" vertex="1">
+          <mxGeometry height="240" width="400" x="280" y="370.1" as="geometry" />
+        </mxCell>
+        <mxCell id="g2" parent="az2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" value="Gunicorn &amp;amp; django (in a single container)" vertex="1">
+          <mxGeometry height="60" width="100" x="30" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" parent="az2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;" value="Redis (as container)" vertex="1">
+          <mxGeometry height="60" width="100" x="260" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-8" edge="1" parent="az2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="119.5" as="sourcePoint" />
+            <mxPoint x="250" y="119.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="vpc" source="r1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="294.47368421052624" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="vpc" source="r2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="359.757894736842" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cf" parent="vpc" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;shape=mxgraph.aws3.cloudfront;fillColor=#F58534;gradientColor=none;" value="CloudFront&lt;br&gt;(pay as you go)" vertex="1">
+          <mxGeometry height="80" width="80" x="20" y="290.1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="vpc">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="335.07142857142844" as="sourcePoint" />
+            <mxPoint x="205" y="335" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-4" parent="vpc" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#FF6A00;strokeColor=none;shape=mxgraph.alibaba_cloud.alb_application_load_balancer_01;" value="" vertex="1">
+          <mxGeometry height="70.2" width="82.77" x="197.23" y="295" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-6" edge="1" parent="vpc">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="240" y="270" as="sourcePoint" />
+            <mxPoint x="270" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-10" parent="vpc" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#C925D1;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.rds_multi_az;" value="" vertex="1">
+          <mxGeometry height="58" width="78" x="760" y="301.1" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-11" parent="vpc" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit;&quot;&gt;&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit;&quot;&gt;PS - RDS multi (2) AZ&lt;/font&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="769" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-13" parent="vpc" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="ALB" vertex="1">
+          <mxGeometry height="30" width="60" x="208.62" y="359.1" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-7" edge="1" parent="vpc">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="240" y="400" as="sourcePoint" />
+            <mxPoint x="280" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-3" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="124" y="395" as="sourcePoint" />
+            <mxPoint x="214" y="395" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-1" parent="1" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.user;" value="" vertex="1">
+          <mxGeometry height="90" width="90" x="20" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;strong&gt;&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit;&quot;&gt;&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit; font-size: 18px;&quot;&gt;app will run in ECS fargate cluster (gunicorn &amp;amp; django, and redis resources)&lt;/font&gt;&lt;/font&gt;&lt;/strong&gt;" vertex="1">
+          <mxGeometry height="30" width="720" x="-220" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-14" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="User" vertex="1">
+          <mxGeometry height="30" width="60" x="35" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-15" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 48px;&quot;&gt;VPC - us-east-1&lt;/font&gt;&lt;div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="370" x="540" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-16" parent="1" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" value="" vertex="1">
+          <mxGeometry height="78" width="78" x="17" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-20" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="private S3 bucket for static files (outside the vpc, access for cloudfront using OAC - origin access control).&lt;div&gt;bucket policy - only cloudfront with sigv4 signature has access to the private bucket&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="180" x="-42" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-19" edge="1" parent="1" source="cf" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.21;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="ayJMt9I-cEMU8xtIQuHl-16">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ayJMt9I-cEMU8xtIQuHl-21" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;u&gt;&lt;b&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;Github Actions Pipeline&lt;/font&gt;&lt;/b&gt;&lt;/u&gt;&lt;/div&gt;&lt;div style=&quot;text-align: center;&quot;&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;b style=&quot;&quot;&gt;1) GitHub runner setup&lt;/b&gt; - downloading the source code and installing the required python environment (Python 3.10).&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;2) code scanning (Linting - flake8)&lt;/b&gt; - static code scanning for syntax errors before building the docker image.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;3) Build &amp;amp; Container Scanning (Docker + Trivy)&lt;/b&gt; - building the docker image and scanning it before pushing to AWS: ensures no vulnerable OS packages are introduced to your ECS cluster.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;4) Secure AWS Authentication (OIDC)&lt;/b&gt; - instead of pushing the images to AWS using hard-coded access keys, we&#39;ll use OIDC which uses temporary signed tokens for pipeline runs.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;5) Pushing to AWS&lt;/b&gt; - the pipeline pushes the image to ECR, the static files to S3, updates the ECS Fargate orchestrator and clears the CloudFront cache.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;6) ECS Deployment &amp;amp; Cache Invalidation&lt;/b&gt; - update the task definition with the new docker image tag, and deploy it to the Fargate cluster. Finally, execute a CloudFront invalidation so users instantly see any CSS or image changes you made.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="540" x="-550" y="440" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
