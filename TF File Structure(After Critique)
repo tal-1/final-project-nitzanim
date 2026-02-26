@@ -25,9 +25,9 @@ terraform-status-page/
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
 │   ├── ecs/                    <-- (Split from compute - Fargate tasks only)
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── frontend/               
+│   ├── frontend/               <-- CF + S3 bucket for Django static files
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── database/               
+│   ├── database/               <-- RDS (PS) + ElastCache
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
 │   └── dns/                    <-- (Read-only Route53 integration)
 │       ├── main.tf, variables.tf, outputs.tf
