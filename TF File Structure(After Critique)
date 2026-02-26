@@ -21,9 +21,9 @@ terraform-status-page/
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
 │   ├── security/               
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── alb/                    <-- (NEW: Split from compute - Load Balancing only)
+│   ├── alb/                    <-- (Split from compute - Load Balancing only)
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── ecs/                    <-- (NEW: Split from compute - Fargate tasks only)
+│   ├── ecs/                    <-- (Split from compute - Fargate tasks only)
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
 │   ├── frontend/               
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
