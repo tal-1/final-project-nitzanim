@@ -1,5 +1,5 @@
 terraform-status-page/
-├── .gitignore                  <-- storing sensitiva data like: secrets.tfvars
+├── .gitignore                  <-- (Updated: No longer needs to track secrets.tfvars)
 |
 ├── environments/               
 │   ├── dev/                    
@@ -8,9 +8,8 @@ terraform-status-page/
 │   │   ├── main.tf             <-- (Orchestrates modules for Dev)
 │   │   ├── variables.tf        <-- (Defines inputs expected)
 │   │   ├── locals.tf           <-- (DRY internal variables like tags and naming conventions)
-│   │   ├── outputs.tf          <-- (Exports ALB/CloudFront URLs to console & stores data for modules)
-│   │   ├── terraform.tfvars    <-- (Committable non-sensitive config)
-│   │   └── secrets.tfvars      <-- (Strictly for passwords)
+│   │   ├── outputs.tf          <-- (Exports ALB/CloudFront URLs to console)
+│   │   └── terraform.tfvars    <-- (Committable non-sensitive config. NO SECRETS HERE.)
 │   ├── stage/                  
 │   │   └── ... (same structure as dev)
 │   └── prod/                   
@@ -21,30 +20,21 @@ terraform-status-page/
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
 │   ├── security/               
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── alb/                    <-- (Split from compute - Load Balancing only)
+│   ├── alb/                    
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── ecs/                    <-- (Split from compute - Fargate tasks only)
+│   ├── ecs/                                                <-- (NEW LOGIC: Generates & stores Django SECRET_KEY)
+│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf    <-- ecs/main.tf has the random_password resource and an aws_secretsmanager_secret resource 
+│   ├── frontend/               
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── frontend/               <-- CF + S3 bucket for Django static files
-│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── database/               <-- RDS (PS) + ElastCache
-│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   └── dns/                    <-- (Read-only Route53 integration)
+│   ├── database/                                           <-- (NEW LOGIC: Generates & stores RDS password)
+│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf    <-- database/main.tf has the random_password resource and an aws_secretsmanager_secret resource
+│   └── dns/                    
 │       ├── main.tf, variables.tf, outputs.tf
 │
 └── global/                     
     ├── ecr/                    
-    │   ├── backend.tf          <-- (Isolated state for ECR)
-    │   ├── versions.tf         <-- (Version pinning)
-    │   ├── main.tf
-    │   └── outputs.tf
+    │   ├── backend.tf, versions.tf, main.tf, outputs.tf
     ├── github_oidc/            
-    │   ├── backend.tf          <-- (Isolated state for OIDC roles)
-    │   ├── versions.tf         <-- (Version pinning)
-    │   ├── main.tf
-    │   └── outputs.tf
+    │   ├── backend.tf, versions.tf, main.tf, outputs.tf
     └── s3-backend/             
-        ├── backend.tf          <-- (Isolated state for the backend infrastructure)
-        ├── versions.tf         <-- (Version pinning)
-        ├── main.tf
-        └── outputs.tf
+        ├── backend.tf, versions.tf, main.tf, outputs.tf
