@@ -29,22 +29,22 @@ terraform-status-page/
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
 │   ├── database/               
 │   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   └── dns/                    <-- (NEW: Read-only Route53 integration)
+│   └── dns/                    <-- (Read-only Route53 integration)
 │       ├── main.tf, variables.tf, outputs.tf
 │
 └── global/                     
     ├── ecr/                    
-    │   ├── backend.tf          <-- (NEW: Isolated state for ECR)
-    │   ├── versions.tf         <-- (NEW: Version pinning)
+    │   ├── backend.tf          <-- (Isolated state for ECR)
+    │   ├── versions.tf         <-- (Version pinning)
     │   ├── main.tf
     │   └── outputs.tf
     ├── github_oidc/            
-    │   ├── backend.tf          <-- (NEW: Isolated state for OIDC roles)
-    │   ├── versions.tf         <-- (NEW: Version pinning)
+    │   ├── backend.tf          <-- (Isolated state for OIDC roles)
+    │   ├── versions.tf         <-- (Version pinning)
     │   ├── main.tf
     │   └── outputs.tf
     └── s3-backend/             
-        ├── backend.tf          <-- (NEW: Isolated state for the backend infrastructure)
-        ├── versions.tf         <-- (NEW: Version pinning)
+        ├── backend.tf          <-- (Isolated state for the backend infrastructure)
+        ├── versions.tf         <-- (Version pinning)
         ├── main.tf
         └── outputs.tf
