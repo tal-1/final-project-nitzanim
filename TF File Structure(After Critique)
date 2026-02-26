@@ -8,7 +8,7 @@ terraform-status-page/
 │   │   ├── main.tf             <-- (Orchestrates modules for Dev)
 │   │   ├── variables.tf        <-- (Defines inputs expected)
 │   │   ├── locals.tf           <-- (DRY internal variables like tags and naming conventions)
-│   │   ├── outputs.tf          <-- (Exports ALB/CloudFront URLs to console & stores data for compute module)
+│   │   ├── outputs.tf          <-- (Exports ALB/CloudFront URLs to console & stores data for modules)
 │   │   ├── terraform.tfvars    <-- (Committable non-sensitive config)
 │   │   └── secrets.tfvars      <-- (Strictly for passwords)
 │   ├── stage/                  
