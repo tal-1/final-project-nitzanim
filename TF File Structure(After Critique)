@@ -1,14 +1,16 @@
 terraform-status-page/
+├── .gitignore                  <-- storing sensitiva data like: secrets.tfvars
+|
 ├── environments/               
 │   ├── dev/                    
 │   │   ├── backend.tf          <-- (Isolates Dev state file in S3)
-│   │   ├── versions.tf         <-- (NEW: Pins Terraform & AWS provider versions)
+│   │   ├── versions.tf         <-- (Pins Terraform & AWS provider versions)
 │   │   ├── main.tf             <-- (Orchestrates modules for Dev)
 │   │   ├── variables.tf        <-- (Defines inputs expected)
-│   │   ├── locals.tf           <-- (NEW: DRY internal variables like tags)
-│   │   ├── outputs.tf          <-- (NEW: Exports ALB/CloudFront URLs to console)
+│   │   ├── locals.tf           <-- (DRY internal variables like tags and naming conventions)
+│   │   ├── outputs.tf          <-- (Exports ALB/CloudFront URLs to console & stores data for compute module)
 │   │   ├── terraform.tfvars    <-- (Committable non-sensitive config)
-│   │   └── secrets.tfvars      <-- (NEW/GITIGNORED: Strictly for passwords)
+│   │   └── secrets.tfvars      <-- (Strictly for passwords)
 │   ├── stage/                  
 │   │   └── ... (same structure as dev)
 │   └── prod/                   
