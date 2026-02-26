@@ -1,0 +1,48 @@
+terraform-status-page/
+├── environments/               
+│   ├── dev/                    
+│   │   ├── backend.tf          <-- (Isolates Dev state file in S3)
+│   │   ├── versions.tf         <-- (NEW: Pins Terraform & AWS provider versions)
+│   │   ├── main.tf             <-- (Orchestrates modules for Dev)
+│   │   ├── variables.tf        <-- (Defines inputs expected)
+│   │   ├── locals.tf           <-- (NEW: DRY internal variables like tags)
+│   │   ├── outputs.tf          <-- (NEW: Exports ALB/CloudFront URLs to console)
+│   │   ├── terraform.tfvars    <-- (Committable non-sensitive config)
+│   │   └── secrets.tfvars      <-- (NEW/GITIGNORED: Strictly for passwords)
+│   ├── stage/                  
+│   │   └── ... (same structure as dev)
+│   └── prod/                   
+│       └── ... (same structure as dev)
+│
+├── modules/                    
+│   ├── networking/             
+│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
+│   ├── security/               
+│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
+│   ├── alb/                    <-- (NEW: Split from compute - Load Balancing only)
+│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
+│   ├── ecs/                    <-- (NEW: Split from compute - Fargate tasks only)
+│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
+│   ├── frontend/               
+│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
+│   ├── database/               
+│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
+│   └── dns/                    <-- (NEW: Read-only Route53 integration)
+│       ├── main.tf, variables.tf, outputs.tf
+│
+└── global/                     
+    ├── ecr/                    
+    │   ├── backend.tf          <-- (NEW: Isolated state for ECR)
+    │   ├── versions.tf         <-- (NEW: Version pinning)
+    │   ├── main.tf
+    │   └── outputs.tf
+    ├── github_oidc/            
+    │   ├── backend.tf          <-- (NEW: Isolated state for OIDC roles)
+    │   ├── versions.tf         <-- (NEW: Version pinning)
+    │   ├── main.tf
+    │   └── outputs.tf
+    └── s3-backend/             
+        ├── backend.tf          <-- (NEW: Isolated state for the backend infrastructure)
+        ├── versions.tf         <-- (NEW: Version pinning)
+        ├── main.tf
+        └── outputs.tf
