@@ -1,0 +1,17 @@
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Ignore Mac system files (just in case)
+.DS_Store
+
+# Ignore Windows system files
+Thumbs.db
+desktop.ini
