@@ -5,7 +5,7 @@ terraform-status-page/
 │   ├── dev/                    
 │   │   ├── backend.tf          <-- (Isolates Dev state file in S3)
 │   │   ├── versions.tf         <-- (Pins Terraform & AWS provider versions)
-│   │   ├── main.tf             <-- (Orchestrates modules for Dev)
+│   │   ├── main.tf             <-- (Orchestrates modules for <env>)
 │   │   ├── variables.tf        <-- (Defines inputs expected)
 │   │   ├── locals.tf           <-- (DRY internal variables like tags and naming conventions)
 │   │   ├── outputs.tf          <-- (Exports ALB/CloudFront URLs to console)
@@ -17,19 +17,22 @@ terraform-status-page/
 │
 ├── modules/                    
 │   ├── networking/             
-│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
+│   │   ├── main.tf                 <-- builds ARNs by relevance to module's logic
+│   │   ├── variables.tf            <-- where variables are defined by inputs (from: environments/<env>/terraform.tfvars --> environments/<env>/main.tf, hardcoded by human)
+│   │   ├── outputs.tf              <-- hands back ARNs' IDs & URLs
+│   │   ├── locals.tf               <-- defines internal naming conventions
 │   ├── security/               
-│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
+│   │   ├── ... (same structure)
 │   ├── alb/                    
-│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── ecs/                                                <-- (NEW LOGIC: Generates & stores Django SECRET_KEY)
-│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf    <-- ecs/main.tf has the random_password resource and an aws_secretsmanager_secret resource 
+│   │   ├── ... (same structure)
+│   ├── ecs/                        <-- (NEW LOGIC: Generates & stores Django SECRET_KEY)
+│   │   ├── ... (same structure)    <-- ecs/main.tf has the random_password resource and an aws_secretsmanager_secret resource 
 │   ├── frontend/               
-│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf
-│   ├── database/                                           <-- (NEW LOGIC: Generates & stores RDS password)
-│   │   ├── main.tf, variables.tf, outputs.tf, locals.tf    <-- database/main.tf has the random_password resource and an aws_secretsmanager_secret resource
+│   │   ├── ... (same structure)
+│   ├── database/                   <-- (NEW LOGIC: Generates & stores RDS password)
+│   │   ├── ... (same structure)    <-- database/main.tf has the random_password resource and an aws_secretsmanager_secret resource
 │   └── dns/                    
-│       ├── main.tf, variables.tf, outputs.tf
+│       ├── ... (same structure)
 │
 └── global/                     
     ├── ecr/                    
