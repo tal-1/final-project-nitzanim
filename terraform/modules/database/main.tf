@@ -69,7 +69,9 @@ resource "aws_db_instance" "main" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [var.rds_sg_id]
   
-  skip_final_snapshot    = true # Set to true for Dev so we can destroy it easily. Set to false for Prod!
+  # if the environment is "prod", skip_final_snapshot is FALSE to save the data
+  # otherwise, for dev/stage, it is TRUE to delete the data
+  skip_final_snapshot    = var.environment == "prod" ? false : true
   publicly_accessible    = false
 
   tags = merge(var.tags, { Name = local.db_identifier })
