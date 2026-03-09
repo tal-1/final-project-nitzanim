@@ -15,23 +15,23 @@ terraform-status-page/
 │   └── prod/                   
 │       └── ... (same structure as dev)
 │
-├── modules/                    
-│   ├── networking/             
+├── modules/                        
+│   ├── networking/        <-- ***Dynamic VPCs and subnets***
 │   │   ├── main.tf                 <-- builds ARNs by relevance to module's logic
 │   │   ├── variables.tf            <-- where variables are defined by inputs (from: environments/<env>/terraform.tfvars --> environments/<env>/main.tf, hardcoded by human)
 │   │   ├── outputs.tf              <-- hands back ARNs' IDs & URLs
 │   │   ├── locals.tf               <-- defines internal naming conventions
-│   ├── security/               
+│   ├── security/          <-- ***Zero-trust, least-privilege 'firewalls'***
 │   │   ├── ... (same structure)
-│   ├── alb/                    
+│   ├── alb/               <-- ***Intelligent traffic routing***
 │   │   ├── ... (same structure)
-│   ├── ecs/                        <-- (NEW LOGIC: Generates & stores Django SECRET_KEY)
+│   ├── ecs/               <-- ***Serverless Fargate containers with strict IAM roles***
 │   │   ├── ... (same structure)    <-- ecs/main.tf has the random_password resource and an aws_secretsmanager_secret resource 
-│   ├── frontend/               
+│   ├── frontend/          <-- ***ICloudFront CDN caching with secure S3 storage***
 │   │   ├── ... (same structure)
-│   ├── database/                   <-- (NEW LOGIC: Generates & stores RDS password)
+│   ├── database/          <-- ***Auto-generated passwords locked in AWS Secrets Manager, isolated in private subnets***
 │   │   ├── ... (same structure)    <-- database/main.tf has the random_password resource and an aws_secretsmanager_secret resource
-│   └── dns/                    
+│   └── dns/               <-- ***Route53 Alias routing***
 │       ├── ... (same structure)
 │
 └── global/                     
