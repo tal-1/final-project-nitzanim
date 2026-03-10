@@ -107,3 +107,56 @@ resource "aws_cloudfront_distribution" "main" {
     }
   }
 }
+
+# ==========================================
+# 4. WAF (must be in us-east-1)
+# ==========================================
+resource "aws_wafv2_web_acl" "main" {
+  name        = "${var.environment}-cloudfront-waf"
+  description = "WAF for CloudFront Distribution"
+  scope       = "CLOUDFRONT"
+
+  default_action {
+    allow {}
+  }
+
+  # AWS Managed Rule: Blocks common vulnerabilities like SQLi and XSS
+  rule {
+    name     = "AWS-AWSManagedRulesCommonRuleSet"
+    priority = 1
+    
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "aws-common-rules"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.environment}-waf-metrics"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_cloudfront_distribution" "main" {
+  enabled         = true
+  is_ipv6_enabled = true
+  comment         = "${var.environment} Frontend Distribution"
+  
+  # NEW: Attach the WAF here!
+  web_acl_id      = aws_wafv2_web_acl.main.arn 
+  
+  tags            = var.tags
+  # ... rest of your existing CloudFront config ...

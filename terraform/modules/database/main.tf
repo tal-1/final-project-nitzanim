@@ -68,7 +68,9 @@ resource "aws_db_instance" "main" {
   
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [var.rds_sg_id]
-  
+ 
+  multi_az               = var.environment == "prod" ? true : false
+ 
   # if the environment is "prod", skip_final_snapshot is FALSE to save the data
   # otherwise, for dev/stage, it is TRUE to delete the data
   skip_final_snapshot    = var.environment == "prod" ? false : true
