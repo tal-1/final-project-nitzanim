@@ -32,7 +32,7 @@ performance testing - with Locust
 
 9) Manual Approval - The pipline stops, A lead engineer gets an alert to review the SIT and locust results and clicks "Approve" in github.
 
-10) Production Release - Once approved the exact v1.2.3 image is deployed to Prod ECS, Prod DB is migrated and Prod CliudFront is invalidated.
+10) Production Release - Once approved the exact v1.2.3 image is deployed to Prod ECS, Prod DB is migrated and Prod CloudFront is invalidated.
 
 
 environments for code testing
