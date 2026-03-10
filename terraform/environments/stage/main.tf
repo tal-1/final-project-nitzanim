@@ -45,7 +45,7 @@ module "ecs" {
   target_group_arn    = module.alb.target_group_arn
   
   # Passing Database info to the containers
-  db_endpoint         = module.database.rds_endpoint
+  db_endpoint         = module.database.db_endpoint
   cache_endpoint      = module.database.cache_endpoint
   tags                = local.common_tags
 }

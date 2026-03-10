@@ -51,6 +51,7 @@ resource "aws_cloudfront_distribution" "main" {
   is_ipv6_enabled = true
   comment         = "${var.environment} Frontend Distribution"
   tags            = var.tags
+  web_acl_id      = aws_wafv2_web_acl.main.arn
 
   # --- ORIGIN 1: The S3 Bucket ---
   origin {
@@ -150,13 +151,3 @@ resource "aws_wafv2_web_acl" "main" {
   }
 }
 
-resource "aws_cloudfront_distribution" "main" {
-  enabled         = true
-  is_ipv6_enabled = true
-  comment         = "${var.environment} Frontend Distribution"
-  
-  # NEW: Attach the WAF here!
-  web_acl_id      = aws_wafv2_web_acl.main.arn 
-  
-  tags            = var.tags
-  # ... rest of your existing CloudFront config ...
