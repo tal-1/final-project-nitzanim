@@ -30,8 +30,8 @@ module "database" {
   environment          = local.environment
   vpc_id               = module.networking.vpc_id
   private_subnets      = module.networking.private_subnets
-  db_security_group    = module.security.rds_sg_id
-  cache_security_group = module.security.cache_sg_id
+  rds_sg_id            = module.security.rds_sg_id
+  cache_sg_id          = module.security.cache_sg_id
   tags                 = local.common_tags
 }
 
@@ -39,7 +39,6 @@ module "database" {
 module "ecs" {
   source              = "../../modules/ecs"
   environment         = local.environment
-  vpc_id              = module.networking.vpc_id
   private_subnets     = module.networking.private_subnets
   ecs_security_group  = module.security.ecs_sg_id
   target_group_arn    = module.alb.target_group_arn
