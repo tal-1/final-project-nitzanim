@@ -74,6 +74,9 @@ resource "aws_db_instance" "main" {
   # if the environment is "prod", skip_final_snapshot is FALSE to save the data
   # otherwise, for dev/stage, it is TRUE to delete the data
   skip_final_snapshot    = var.environment == "prod" ? false : true
+
+  # Provide a name for the final snapshot if we are backing it up
+  final_snapshot_identifier = var.environment == "prod" ? "${local.db_identifier}-final-snapshot" : null
   publicly_accessible    = false
 
   tags = merge(var.tags, { Name = local.db_identifier })
