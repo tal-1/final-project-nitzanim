@@ -28,7 +28,6 @@ module "alb" {
 module "database" {
   source               = "../../modules/database"
   environment          = local.environment
-  vpc_id               = module.networking.vpc_id
   private_subnets      = module.networking.private_subnets
   rds_sg_id            = module.security.rds_sg_id
   cache_sg_id          = module.security.cache_sg_id
