@@ -46,6 +46,10 @@ module "ecs" {
   # Passing Database info to the containers
   db_endpoint         = module.database.db_endpoint
   cache_endpoint      = module.database.cache_endpoint
+
+  db_password_secret_arn = module.database.db_password_secret_arn
+  django_secret_key_arn  = module.database.django_secret_key_arn
+
   tags                = local.common_tags
 }
 
