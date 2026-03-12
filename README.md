@@ -9,7 +9,7 @@ Github Actions Pipeline
 
 ***developer pushes code to feature branch - tagged with commit id***
 
-2) code scanning (Linting - Flake8 + Bandit) - Flake8 catchs syntax errors. typos and style issues, Then Bandit scans out python code for security vulnerabilities (hardcoded passwords, SQL injection) before building the docker image.
+2) code scanning (Linting - Flake8 + Bandit) - Flake8 catchs syntax errors. typos and style issues, then Bandit scans out python code for security vulnerabilities (hardcoded passwords, SQL injection) before building the docker image.
 
 3) Unit Testing (Pytest) - Runs our fast, isolated python unit tests (Verifies Django app logic).
 
