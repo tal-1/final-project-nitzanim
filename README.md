@@ -3,15 +3,15 @@
 
 
 
-Github Actions Pipeline
+# **Github Actions Pipeline**
 
-developer pushes code to feature branch - tagged with commit id
+### **developer pushes code to feature branch - tagged with commit id**
 
-Phase 1: Validation (On Feature Branch)
+## **Phase 1: Validation (On Feature Branch)**
 
 1) GitHub runner setup - Downloading the source code and installing the required python environment (Python 3.10).
 
-2)Code scanning (Linting - Flake8 + Bandit) - Flake8 catches syntax errors, typos, and style issues. Bandit scans the Python code for security vulnerabilities (like hardcoded passwords or SQL injection).
+2) Code scanning (Linting - Flake8 + Bandit) - Flake8 catches syntax errors, typos, and style issues. Bandit scans the Python code for security vulnerabilities (like hardcoded passwords or SQL injection).
 
 3) Unit Testing (Pytest) - Runs fast and isolated Python unit tests.
 
@@ -19,9 +19,9 @@ Phase 1: Validation (On Feature Branch)
 
 5) Build & Container Scanning (Docker + Trivy) - Builds the Docker image (Django, Gunicorn, and code), tags the image with a unique Git Commit ID, then Trivy scans it.
 
-pipeline deploys image to dev environment
+### **pipeline deploys image to dev environment**
 
-Phase 2: Dev Deployment (Note: This phase strictly uses OIDC)
+## **Phase 2: Dev Deployment (Note: This phase strictly uses OIDC)**
 
 6) Secure AWS Authentication (OIDC) - Instead of pushing images to AWS using hard-coded long-term access keys, the pipeline uses OIDC (OpenID Connect) to request temporary, signed access tokens.
 
@@ -36,9 +36,9 @@ c. Pushes these static files to our Dev S3 Bucket.
 
 9) Database Migration & ECS Deployment - The pipeline runs a temporary one-off ECS task that executes `python manage.py migrate`. Once successful, it updates the Dev ECS task definition with the new Commit ID image tag. (Purpose: Safely update the Postgres schema FIRST, ensuring the new code doesn't crash from missing database columns).
 
-dev merges code to main - tagged with SemVer (like v1.2.3). deploys image to stage environment
+### **dev merges code to main - tagged with SemVer (like v1.2.3). deploys image to stage environment**
 
-Phase 3: Stage Deployment & Verification
+## **Phase 3: Stage Deployment & Verification**
 
 10) Stage Infrastructure Sync & Deployment - Runs `terraform apply` for Stage, runs the database migration, and deploys the `v1.2.3` image to the Stage ECS cluster exactly like step 9.
 
@@ -49,9 +49,9 @@ b. Performance (Locust): Spins up virtual users and bombs the Stage environment.
 
 12) Automated Rollback - If the SIT or Locust tests fail, the pipeline automatically re-deploys the previous "Known Good" Docker image tag to the Stage ECS service.
 
-manual approval
+### **manual approval**
 
-Phase 4: Production Release
+## **Phase 4: Production Release**
 
 13) Manual Approval - The pipeline stops. A lead engineer gets an alert to review the SIT and Locust results and clicks "Approve" in GitHub. 
 
