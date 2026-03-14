@@ -14,7 +14,7 @@ provider "aws" {
   
   default_tags {
     tags = {
-      Environment = "dev"
+      Environment = "stage"
       Project     = "ST-status-page"
       ManagedBy   = "ST-Final-Project"
     }

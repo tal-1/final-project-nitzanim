@@ -3,37 +3,59 @@
 
 
 
-Github Actions Pipeline
+# **Github Actions Pipeline**
 
-1) GitHub runner setup - downloading the source code and installing the required python environment (Python 3.10).
+## **developer pushes code to feature branch - tagged with commit id**
 
-***developer pushes code to feature branch - tagged with commit id***
+### **Phase 1: Validation (On Feature Branch)**
 
-2) code scanning (Linting - Flake8 + Bandit) - Flake8 catchs syntax errors. typos and style issues, Then Bandit scans out python code for security vulnerabilities (hardcoded passwords, SQL injection) before building the docker image.
+1) GitHub runner setup - Downloading the source code and installing the required python environment (Python 3.10).
 
-3) Unit Testing (Pytest) - Runs our fast, isolated python unit tests (Verifies Django app logic).
+2) Code scanning (Linting - Flake8 + Bandit) - Flake8 catches syntax errors, typos, and style issues. Bandit scans the Python code for security vulnerabilities (like hardcoded passwords or SQL injection).
 
-4) Build & Container Scanning (Docker + Trivy) - builds the docker image (Django, Gunicorn and our code), tags the image with a unique Git Commit ID, Then Trivy scans it before pushing to AWS: ensures no vulnerable OS packages are introduced to the ECS cluster.
+3) Unit Testing (Pytest) - Runs fast and isolated Python unit tests.
 
-***pipeline deploys image to dev environment***
+4) IaC Validation (Terraform Plan) - Runs `terraform plan` for the Dev environment, in order to verify that any new infrastructure configurations - like a new S3 bucket or environment variable - are syntactically correct and safe to apply.
 
-5) Secure AWS Authentication (OIDC) - instead of pushing the images to AWS using hard-coded access keys, we'll use OIDC which uses temporary signed tokens for pipeline runs.
+5) Build & Container Scanning (Docker + Trivy) - Builds the Docker image (Django, Gunicorn, and code), tags the image with a unique Git Commit ID, then Trivy scans it.
 
-6) Pushing to AWS - 1. The pipeline pushes the Trivy-approved docker image to ECR.
-                    2. Rus python manage.py collectstatic to gather all CSS, JS and image files.
-                    3. Pushes the static files to our Dev S3 Bucket, updates the ECS Fargate                           orchestrator and clears the CloudFront cache.
+## **pipeline deploys image to dev environment**
 
-***dev merges code to main - tagged with SenVer (like v1.2.3). deploys image to stage environment***
-System Integration Testing (SIT) - with Pytest
-performance testing - with Locust
+### **Phase 2: Dev Deployment (Note: This phase strictly uses OIDC)**
 
-7) ECS Deployment & Cache Invalidation - The pipeline runs a temporary one-off ECS task that executes python manage.py migrate to safely update out PS. Update the Dev ECS task definition with the new Commit ID image tag. Finally, execute a CloudFront invalidation so users instantly see any CSS or image changes you made.
+6) Secure AWS Authentication (OIDC) - Instead of pushing images to AWS using hard-coded long-term access keys, the pipeline uses OIDC (OpenID Connect) to request temporary, signed access tokens.
 
-8) Stage Testing & Manual Production Release - The pipline deploys the v1.2.3 (semantic versioning) image like in step 7 but targets the Stage environment. Pytest fires automated tests against the live Stage URLs to make sure the application communicates properly with Redis and PS. Locust spins up virtual users and bombs the Stage environment to make sure the new code doesnt slow down the system under heavy load.
+7) Infrastructure Sync - Runs `terraform apply` for the Dev environment. (Purpose: Actually create or update the required AWS infrastructure so the "house" is built before the code moves in).
 
-9) Manual Approval - The pipline stops, A lead engineer gets an alert to review the SIT and locust results and clicks "Approve" in github.
+8) Pushing to AWS:
+- Pushes the Trivy-approved Docker image to ECR.
 
-10) Production Release - Once approved the exact v1.2.3 image is deployed to Prod ECS, Prod DB is migrated and Prod CloudFront is invalidated.
+- Runs `python manage.py collectstatic` using Django's Manifest storage. (Purpose: Gather CSS/JS files and rename them with unique hashes, like `style.a1b2c3.css`, for zero-downtime cache updates).
+
+- Pushes these static files to our Dev S3 Bucket.
+
+9) Database Migration & ECS Deployment - The pipeline runs a temporary one-off ECS task that executes `python manage.py migrate`. Once successful, it updates the Dev ECS task definition with the new Commit ID image tag. (Purpose: Safely update the Postgres schema FIRST, ensuring the new code doesn't crash from missing database columns).
+
+## **dev merges code to main - tagged with SemVer (like v1.2.3). deploys image to stage environment**
+
+### **Phase 3: Stage Deployment & Verification**
+
+10) Stage Infrastructure Sync & Deployment - Runs `terraform apply` for Stage, runs the database migration, and deploys the `v1.2.3` image to the Stage ECS cluster exactly like step 9.
+
+11) System Integration & Performance Testing:
+- SIT (Pytest): Fires automated tests against the live Stage URLs. (Purpose: Make sure the application communicates properly with Valkey and the RDS Postgres DB).
+
+- Performance (Locust): Spins up virtual users and bombs the Stage environment.
+
+12) Automated Rollback - If the SIT or Locust tests fail, the pipeline automatically re-deploys the previous "Known Good" Docker image tag to the Stage ECS service.
+
+## **manual approval**
+
+### **Phase 4: Production Release**
+
+13) Manual Approval - The pipeline stops. A lead engineer gets an alert to review the SIT and Locust results and clicks "Approve" in GitHub. 
+
+14) Production Release - Once approved, the pipeline runs `terraform apply` for Prod (which is protected by the Terraform `prevent_destroy` lifecycle block to prevent accidental deletion), migrates the Prod DB, and finally deploys the exact `v1.2.3` image to the Prod ECS cluster. 
 
 
 environments for code testing

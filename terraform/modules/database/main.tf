@@ -58,7 +58,7 @@ resource "aws_secretsmanager_secret_version" "django_secret" {
 resource "aws_db_instance" "main" {
   identifier             = local.db_identifier
   engine                 = "postgres"
-  engine_version         = "16.3" # Or your preferred Postgres version
+  engine_version         = "16" # Or your preferred Postgres version
   instance_class         = "db.t4g.micro" # Cheap, ARM-based instance for Dev
   allocated_storage      = 20
   storage_type           = "gp3"
@@ -85,17 +85,15 @@ resource "aws_db_instance" "main" {
 # ==========================================
 # 4. ElastiCache (Valkey/Redis)
 # ==========================================
-resource "aws_elasticache_cluster" "main" {
-  cluster_id           = local.cache_cluster_id
-  engine               = "valkey" # AWS natively supports Valkey!
-  engine_version       = "7.2"
-  node_type            = "cache.t4g.micro"
-  num_cache_nodes      = 1
-  parameter_group_name = "default.valkey7"
-  port                 = 6379
-
-  subnet_group_name    = aws_elasticache_subnet_group.main.name
-  security_group_ids   = [var.cache_sg_id]
-
-  tags = merge(var.tags, { Name = local.cache_cluster_id })
+resource "aws_elasticache_replication_group" "main" {
+  replication_group_id       = "${var.environment}-valkey"
+  description                = "Valkey replication group for ${var.environment}"
+  engine                     = "valkey"
+  engine_version             = "7.2" # Or whichever Valkey version you are targeting
+  node_type                  = "cache.t4g.micro" # Example instance type
+  
+  # Even if you only want 1 node, this API is required for Valkey
+  num_cache_clusters         = 1 
+  
+  # ... your subnet group and security group variables ...
 }
