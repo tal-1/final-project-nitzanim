@@ -86,7 +86,7 @@
     <mxCell id="ayJMt9I-cEMU8xtIQuHl-1" parent="1" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.user;" value="" vertex="1">
       <mxGeometry height="90" width="90" x="-190" y="350" as="geometry" />
     </mxCell>
-    <mxCell id="ayJMt9I-cEMU8xtIQuHl-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;strong&gt;&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit;&quot;&gt;&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit; font-size: 18px;&quot;&gt;app will run in ECS fargate cluster (gunicorn &amp;amp; django, and redis resources)&lt;/font&gt;&lt;/font&gt;&lt;/strong&gt;" vertex="1">
+    <mxCell id="ayJMt9I-cEMU8xtIQuHl-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;strong&gt;&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit;&quot;&gt;&lt;font dir=&quot;auto&quot; style=&quot;vertical-align: inherit; font-size: 18px;&quot;&gt;app will run in ECS fargate cluster (gunicorn &amp;amp; django) and ElastiCache (Valkey)&lt;/font&gt;&lt;/font&gt;&lt;/strong&gt;" vertex="1">
       <mxGeometry height="30" width="720" x="150" as="geometry" />
     </mxCell>
     <mxCell id="ayJMt9I-cEMU8xtIQuHl-14" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="User" vertex="1">
@@ -198,8 +198,8 @@
     <mxCell id="ayJMt9I-cEMU8xtIQuHl-77" parent="1" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.waf;" value="" vertex="1">
       <mxGeometry height="78" width="78" x="40" y="460" as="geometry" />
     </mxCell>
-    <mxCell id="ayJMt9I-cEMU8xtIQuHl-78" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="WAF - linked to CF" vertex="1">
-      <mxGeometry height="30" width="60" x="49" y="550" as="geometry" />
+    <mxCell id="ayJMt9I-cEMU8xtIQuHl-78" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="WAF&lt;div&gt;linked to CF&lt;/div&gt;" vertex="1">
+      <mxGeometry height="30" width="80" x="40" y="550" as="geometry" />
     </mxCell>
   </root>
 </mxGraphModel>
