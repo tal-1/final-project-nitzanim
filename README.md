@@ -4,7 +4,7 @@
 ![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
 
 ## Introduction
-Welcome to our DevOps Final Project! This repository houses the Infrastructure as Code (IaC) written in **Terraform** to deploy a complete, highly available, and secure AWS cloud environment. 
+Welcome to the ST Status Page project! This repository houses the Infrastructure as Code (IaC) written in **Terraform** to deploy a complete, highly available, and secure AWS cloud environment. 
 
 Our architecture is designed to run a containerized application using **Amazon ECS**, sitting behind an **Application Load Balancer (ALB)**, connected to a managed **Database**, and routed via **DNS**. The project is structured to support multiple environments (`dev`, `stage`, `prod`) using reusable Terraform modules.
 
