@@ -35,6 +35,7 @@ To work with this repository locally, you need the following tools installed:
 * [Git](https://git-scm.com/)
 
 ## Repository Structure
+![complete TF tree here](./TF-File-Structure)
 We follow a standard Terraform directory layout:
 ```text
 terraform/
