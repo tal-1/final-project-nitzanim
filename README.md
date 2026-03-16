@@ -92,7 +92,22 @@ You should never run terraform init, plan, apply, or destroy directly inside the
 - Environments are the Builders: Your environments (environments/dev, environments/prod, etc.) are the actual implementations. If you look at environments/dev/main.tf, you will see that it "calls" the modules and passes specific variables to them (like telling the networking module to use a specific vpc_cidr for Dev).
 
 
+## CI/CD Pipeline
 
+Our Continuous Integration and Continuous Deployment (CI/CD) process is fully automated. 
+
+**[View our complete CI/CD Pipeline Design Diagram (PDF)](./Pipeline/pipeline-design.md)**
+
+### Pipeline Stages:
+1. **Source:** A developer pushes code to the `main` branch or opens a Pull Request.
+2. **Continuous Integration (CI):**
+   * The pipeline automatically lints the code and runs unit tests.
+   * A new Docker image is built from the application code.
+3. **Delivery:** The built Docker image is securely pushed to **Amazon ECR** (Elastic Container Registry).
+4. **Continuous Deployment (CD):**
+   * The pipeline authenticates to AWS securely using **GitHub OIDC**.
+   * **Terraform** applies any infrastructure changes.
+   * The new Docker image is rolled out to the **Amazon ECS** cluster.
 
 
 
