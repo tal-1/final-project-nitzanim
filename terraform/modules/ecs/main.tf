@@ -142,4 +142,8 @@ resource "aws_ecs_service" "app" {
   }
 
   tags = var.tags
+  # once creating the service the very first time, TF completely ignores the task_definition version. Because TF is now "blind" to the task definition, GitHub Actions pipeline is free to update the task definition to v1.2.3, v1.2.4, etc., and TF will never try to interfere or roll it back during infrastructure syncs.
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 }
