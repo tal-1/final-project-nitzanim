@@ -10,7 +10,7 @@ Welcome to the ST Status Page project! This repository houses the Infrastructure
 Our architecture is designed to run a containerized application using **Amazon ECS**, sitting behind an **Application Load Balancer (ALB)**, connected to a managed **Database**, and routed via **DNS**. The project is structured to support multiple environments (`dev`, `stage`, `prod`) using reusable Terraform modules.
 
 ## Architecture Overview
-![Cloud Architecture Diagram](./Cloud-Architecture-HLD.png)
+![Cloud Architecture Diagram](./Screenshots/Cloud-Architecture-HLD.png)
 
 ### Core Modules
 To keep our code clean and reusable, our infrastructure is divided into the following modules:
