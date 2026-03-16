@@ -2,6 +2,7 @@
 
 ![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)
 
 ## Introduction
 Welcome to the ST Status Page project! This repository houses the Infrastructure as Code (IaC) written in **Terraform** to deploy a complete, highly available, and secure AWS cloud environment. 
@@ -65,11 +66,10 @@ Before deploying any environments, you must set up the global infrastructure (in
 - environments/stage
 - environments/prod
 
-**regarding global/s3-backend:
+regarding global/s3-backend:
 the backend configuration is currently wrapped in /* ... */ comments. Leave it commented out.
 Run terraform init and then terraform apply in the global/s3-backend folder. Terraform will create the bucket and DynamoDB table in AWS, and it will temporarily save the .tfstate file locally on your laptop.
 Once the resources are created, remove the /* and */ comments from backend.tf & Run terraform init again. Terraform will notice the change and ask: "Do you want to copy your local state into the new S3 bucket?". Type yes.
-**
 
 **relevant commands:**
 - `terraform init`
