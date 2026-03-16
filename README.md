@@ -1,5 +1,3 @@
-<img width="1047" height="581" alt="image" src="https://github.com/user-attachments/assets/cc1d12a8-7000-4123-96b2-7be4c0f7a951" />
-
 # ST Status Page: AWS Infrastructure
 
 ![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white)
