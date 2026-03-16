@@ -96,7 +96,7 @@ You should never run terraform init, plan, apply, or destroy directly inside the
 
 Our Continuous Integration and Continuous Deployment (CI/CD) process is fully automated. 
 
-**[View our complete CI/CD Pipeline Design Diagram (PDF)](./Pipeline/pipeline-design.md)**
+**[View our complete CI/CD Pipeline Design Diagram](./Pipeline/pipeline-design.md)**
 
 ### Pipeline Stages:
 1. **Source:** A developer pushes code to the `main` branch or opens a Pull Request.
