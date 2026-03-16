@@ -11,7 +11,7 @@ Welcome to our DevOps Final Project! This repository houses the Infrastructure a
 Our architecture is designed to run a containerized application using **Amazon ECS**, sitting behind an **Application Load Balancer (ALB)**, connected to a managed **Database**, and routed via **DNS**. The project is structured to support multiple environments (`dev`, `stage`, `prod`) using reusable Terraform modules.
 
 ## Architecture Overview
-*(You should upload your `Cloud Architecture HLD.png` image to the repo and link it here)*
+![Cloud Architecture Diagram](./Cloud Architecture HLD.png)
 
 ![Architecture Diagram](./Cloud Architecture HLD) ### Core Modules
 To keep our code clean and reusable, our infrastructure is divided into the following modules:
