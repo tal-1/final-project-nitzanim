@@ -11,7 +11,7 @@ Our architecture is designed to run a containerized application using **Amazon E
 ## Architecture Overview
 ![Cloud Architecture Diagram](./Cloud Architecture HLD.png)
 
-![Architecture Diagram](./Cloud Architecture HLD) ### Core Modules
+### Core Modules
 To keep our code clean and reusable, our infrastructure is divided into the following modules:
 * **Networking**: Provisions the VPC, subnets, and routing.
 * **Security**: Manages Identity and Access Management (IAM) roles and Security Groups.
