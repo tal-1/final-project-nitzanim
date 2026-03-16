@@ -14,7 +14,12 @@
 
 5) Unit Testing (Pytest) - Runs fast and isolated Python unit tests.
 
-6) Build & Container Scanning (Docker + Trivy) - Builds the Docker image (Django, Gunicorn, and code), tags the image with a unique Git Commit ID, then Trivy scans it.
+6) Build & Container Scanning (Docker + Trivy) - The runner builds the Docker image using a Multi-Stage Build strategy.
+To avoid public rate limits and speed up the download, the Dockerfile fetches its Python base image through our private ECR Pull Through Cache URI instead of reaching out to the public internet directly.
+
+* Builder stage - First, a heavy "builder" stage installs compilers (like gcc) and builds the Python dependencies.
+* Runner stage - Then, a lightweight "runner" stage simply copies the compiled artifacts and the Django application code, discarding the heavy build tools.
+* This drastically reduces the final image size (lowering storage & data transfer costs). The pipeline tags this lean image with a unique Git Commit ID, then Trivy scans it to ensure no vulnerable OS packages are introduced to the ECS cluster.
 
 7) Global ECR Secure AWS Authentication (OIDC) - Instead of pushing images to AWS using hard-coded long-term access keys, the pipeline uses OIDC (OpenID Connect) to request temporary, signed access tokens.
 
@@ -52,9 +57,9 @@ Invalidate CloudFront.
 
 18) System Integration & Performance Testing:
 
-- SIT (Pytest): Fires automated tests against the live Stage URLs. (Purpose: Make sure the application communicates properly with Valkey and the RDS Postgres DB).
-- Performance (Locust): Spins up virtual users and bombs the Stage environment.
-- Automated Rollback: If the SIT or Locust tests fail, the pipeline uses AWS CLI to automatically revert the Stage ECS service to the previous "Known Good" task definition, and triggers a CloudFront invalidation to revert cached assets.
+* SIT (Pytest): Fires automated tests against the live Stage URLs. (Purpose: Make sure the application communicates properly with Valkey and the RDS Postgres DB).
+* Performance (Locust): Spins up virtual users and bombs the Stage environment.
+* Automated Rollback: If the SIT or Locust tests fail, the pipeline uses AWS CLI to automatically revert the Stage ECS service to the previous "Known Good" task definition, and triggers a CloudFront invalidation to revert cached assets.
 
 ## **manual approval**
 
@@ -68,12 +73,12 @@ Invalidate CloudFront.
 
 22) Production Release:
 
-- Secure AWS Authentication (OIDC) (Runner re-auths after pause)
-- Downloads the saved plan artifact, runs `terraform init`, and then runs `terraform apply tfplan` for Prod (which is protected by the Terraform `prevent_destroy` lifecycle block to prevent accidental deletion)
-- Runs `python manage.py collectstatic` via the Docker container using Django's Manifest storage and pushes these static files to the Prod S3 Bucket
-- Runs a temporary one-off ECS task that executes `python manage.py migrate` for the Prod DB
-- Once successful, it updates the Prod ECS task definition with the exact `v1.2.3` image tag
-- Invalidates the Prod CloudFront cache
+* Secure AWS Authentication (OIDC) (Runner re-auths after pause)
+* Downloads the saved plan artifact, runs `terraform init`, and then runs `terraform apply tfplan` for Prod (which is protected by the Terraform `prevent_destroy` lifecycle block to prevent accidental deletion)
+* Runs `python manage.py collectstatic` via the Docker container using Django's Manifest storage and pushes these static files to the Prod S3 Bucket
+* Runs a temporary one-off ECS task that executes `python manage.py migrate` for the Prod DB
+* Once successful, it updates the Prod ECS task definition with the exact `v1.2.3` image tag
+* Invalidates the Prod CloudFront cache
 
 
 environments for code testing
