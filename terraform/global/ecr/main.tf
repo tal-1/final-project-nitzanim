@@ -23,7 +23,7 @@ resource "aws_ecr_lifecycle_policy" "django_app_cleanup" {
           tagStatus     = "tagged"
           tagPrefixList = ["v"]
           countType     = "imageCountMoreThan"
-          countNumber   = 9999 # Effectively keeps up to 9999 release images indefinitely
+          countNumber   = 50
         }
         action = {
           type = "expire"
