@@ -26,7 +26,7 @@ resource "aws_s3_bucket_public_access_block" "public_access" {
 
 # 2. DynamoDB Table for State Locking
 resource "aws_dynamodb_table" "terraform_locks" {
-  for_each     = toset(["dev", "stage", "prod"])
+  for_each     = toset(["dev", "stage", "prod", "global"])
   name         = "${each.key}-st-status-page-tf-locks"
   billing_mode = "PAY_PER_REQUEST" # Free tier friendly
   hash_key     = "LockID"

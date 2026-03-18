@@ -1,7 +1,6 @@
 terraform {
   backend "s3" {
-    bucket         = "st-status-page-tf-state-bucket"
-    key            = "environments/prod/terraform.tfstate"
+    # leaving encrypt as true because its a static security best-practice
     encrypt        = true
   }
 }
