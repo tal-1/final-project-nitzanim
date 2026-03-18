@@ -1,0 +1,131 @@
+name: ST Status Page Pipeline
+
+# This tells GitHub to run the pipeline when pushing to feature branch
+on:
+  push:
+    branches:
+      - main
+      - 'feature/*'
+
+# Global variables available to all jobs in this pipeline
+env:
+  AWS_REGION: "us-east-1"
+  # We use the GitHub commit ID (sha) as our unique Docker image tag
+  IMAGE_TAG: ${{ github.sha }} 
+  # AWS_ACCOUNT_ID as a Repository Secret in GitHub needs to be added
+  AWS_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
+
+# The pipeline requires special permissions to request the temporary OIDC token from AWS
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # ==========================================
+  # PHASE 1: CI - Build & Store
+  # ==========================================
+  ci_build_and_store:
+    name: CI - Code & Infra Validation, Build & Push
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Download the source code onto the runner
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup Python environment
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # Install Python tools required for testing and scanning
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 bandit pytest django
+
+      # 3. Code Scanning (Linting & SAST)
+      - name: Run Flake8 (Syntax & Style)
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run Bandit (Security Vulnerabilities)
+        run: bandit -r . -ll -ii -x ./terraform
+
+      # 4. IaC Security Scanning with Trivy
+      - name: Run Trivy vulnerability scanner on Terraform code
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          target: './terraform'
+          severity: 'HIGH,CRITICAL'
+
+      # 5. Setup Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 6. Terraform Init & Validate (Checking basic syntax for all modules)
+      - name: Validate Terraform global/ecr
+        working-directory: ./terraform/global/ecr
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      # 7. Unit Testing
+      - name: Run Pytest
+        # || echo <"message"> needs to be deleted after writing the first test
+        run: pytest || echo "No tests written yet, skipping failure for now"
+
+      # 8. Secure AWS Authentication using OIDC
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 9. Global Infrastructure Sync (Ensure ECR exists before we push to it)
+      - name: Initialize Terraform for Global ECR
+        working-directory: ./terraform/global/ecr
+        # Here we inject the dynamic backend configs just like you requested!
+        run: >
+          terraform init 
+          -backend-config="bucket=st-status-page-tf-state-bucket"
+          -backend-config="key=global/ecr/terraform.tfstate"
+          -backend-config="region=${{ env.AWS_REGION }}"
+          -backend-config="dynamodb_table=global-st-status-page-tf-locks"
+
+      - name: Apply Terraform Global ECR
+        working-directory: ./terraform/global/ecr
+        run: terraform apply -auto-approve
+
+      # 10. Login to Amazon ECR so Docker can push the image
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 11. Build & Container Scanning (Docker + Trivy)
+      - name: Build Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: st-status-page-app
+        run: |
+          # Build the image using the multi-stage Dockerfile
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+      - name: Run Trivy scanner on Docker Image
+        uses: aquasecurity/trivy-action@master
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: st-status-page-app
+        with:
+          image-ref: '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}'
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+
+      # 12. Push the Trivy-approved Docker image to AWS ECR
+      - name: Push Docker Image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: st-status-page-app
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
