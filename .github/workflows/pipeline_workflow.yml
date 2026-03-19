@@ -110,7 +110,7 @@ jobs:
           ECR_REPOSITORY: st-status-page-app
         run: |
           # Build the image using the multi-stage Dockerfile
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./src/status-page/status-page
 
       - name: Run Trivy scanner on Docker Image
         uses: aquasecurity/trivy-action@master
