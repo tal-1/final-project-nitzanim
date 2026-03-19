@@ -1,0 +1,60 @@
+name: Stage Cost Saver (Scale Up)
+
+# This schedule runs at 07:00 AM UTC, Monday through Friday
+on:
+  schedule:
+    - cron: '0 5 * * 1-5'
+
+  # Gives you a manual "Play" button in GitHub to wake it up on demand!
+  workflow_dispatch:
+
+env:
+  AWS_REGION: "us-east-1"
+  AWS_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
+  ENVIRONMENT: "stage"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  wake_up_stage:
+    name: Wake Up Stage Resources
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Authenticate with AWS securely
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 2. Wake up the RDS Database
+      # We do this first because the database needs to be ready before the app starts
+      - name: Start RDS Database
+        run: |
+          echo "Starting the Stage RDS instance..."
+          # The || true ensures the pipeline doesn't crash if the database is already running
+          aws rds start-db-instance \
+            --db-instance-identifier ${{ env.ENVIRONMENT }}-postgres || true
+
+          echo "Waiting for the database to become available (this may take a few minutes)..."
+          aws rds wait db-instance-available \
+            --db-instance-identifier ${{ env.ENVIRONMENT }}-postgres
+
+      # 3. Scale ECS Fargate back up to 2 tasks
+      - name: Start ECS Containers
+        run: |
+          echo "Scaling the Stage ECS service back up to 2 tasks..."
+          aws ecs update-service \
+            --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
+            --service ${{ env.ENVIRONMENT }}-django-service \
+            --desired-count 2
+
+          echo "Waiting for Fargate tasks to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
+            --services ${{ env.ENVIRONMENT }}-django-service
+
+          echo "Stage environment is fully awake and ready for testing!"

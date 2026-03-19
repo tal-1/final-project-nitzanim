@@ -1,0 +1,53 @@
+name: Stage Cost Saver (Scale Down)
+
+# The 'schedule' trigger uses standard Cron syntax
+# This example runs at 19:00 (7:00 PM) UTC, Monday through Friday
+on:
+  schedule:
+    - cron: '0 17 * * 1-5'
+
+  # The 'workflow_dispatch' trigger gives you a manual "Play" button in GitHub
+  # so you can trigger this scale-down whenever you want!
+  workflow_dispatch:
+
+env:
+  AWS_REGION: "us-east-1"
+  AWS_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
+  ENVIRONMENT: "stage"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  scale_down_stage:
+    name: Spin Down Stage Resources
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Authenticate with AWS securely
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 2. Scale ECS Fargate down to 0
+      - name: Stop ECS Containers
+        run: |
+          echo "Scaling the Stage ECS service down to 0 tasks..."
+          aws ecs update-service \
+            --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
+            --service ${{ env.ENVIRONMENT }}-django-service \
+            --desired-count 0
+          echo "Fargate tasks successfully spun down."
+
+      # 3. Pause the RDS Database
+      # Based on your Terraform locals, the DB identifier is 'stage-postgres'
+      - name: Stop RDS Database
+        run: |
+          echo "Stopping the Stage RDS instance..."
+          # The || true ensures the pipeline doesn't crash if the database is already stopped
+          aws rds stop-db-instance \
+            --db-instance-identifier ${{ env.ENVIRONMENT }}-postgres || true
+          echo "RDS Database is pausing."

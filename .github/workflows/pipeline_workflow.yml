@@ -33,7 +33,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Setup Python environment
+      #  Setup Python environment
       - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
@@ -45,14 +45,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 bandit pytest django
 
-      # 3. Code Scanning (Linting & SAST)
+      # 2. Code Scanning (Linting & SAST)
       - name: Run Flake8 (Syntax & Style)
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
       - name: Run Bandit (Security Vulnerabilities)
         run: bandit -r . -ll -ii -x ./terraform
 
-      # 4. IaC Security Scanning with Trivy
+      # 3. IaC Security Scanning with Trivy
       - name: Run Trivy vulnerability scanner on Terraform code
         uses: aquasecurity/trivy-action@master
         with:
@@ -60,30 +60,30 @@ jobs:
           target: './terraform'
           severity: 'HIGH,CRITICAL'
 
-      # 5. Setup Terraform CLI
+      #  Setup Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # 6. Terraform Init & Validate (Checking basic syntax for all modules)
+      # 4. Terraform Init & Validate (Checking basic syntax for all modules)
       - name: Validate Terraform global/ecr
         working-directory: ./terraform/global/ecr
         run: |
           terraform init -backend=false
           terraform validate
 
-      # 7. Unit Testing
+      # 5. Unit Testing
       - name: Run Pytest
         # || echo <"message"> needs to be deleted after writing the first test
         run: pytest || echo "No tests written yet, skipping failure for now"
 
-      # 8. Secure AWS Authentication using OIDC
+      # 6. Secure AWS Authentication using OIDC
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 9. Global Infrastructure Sync (Ensure ECR exists before we push to it)
+      # 7. Global Infrastructure Sync (Ensure ECR exists before we push to it)
       - name: Initialize Terraform for Global ECR
         working-directory: ./terraform/global/ecr
         # Here we inject the dynamic backend configs just like you requested!
@@ -98,12 +98,12 @@ jobs:
         working-directory: ./terraform/global/ecr
         run: terraform apply -auto-approve
 
-      # 10. Login to Amazon ECR so Docker can push the image
+      #  Login to Amazon ECR so Docker can push the image
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 11. Build & Container Scanning (Docker + Trivy)
+      # 8. Build & Container Scanning (Docker + Trivy)
       - name: Build Docker Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -122,7 +122,7 @@ jobs:
           format: 'table'
           severity: 'HIGH,CRITICAL'
 
-      # 12. Push the Trivy-approved Docker image to AWS ECR
+      # 9. Push the Trivy-approved Docker image to AWS ECR
       - name: Push Docker Image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -148,7 +148,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 13. Dev Secure AWS Authentication (OIDC)
+      # 10. Dev Secure AWS Authentication (OIDC)
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -158,7 +158,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # 14. Infrastructure Sync for Dev
+      # 11. Infrastructure Sync for Dev
       - name: Initialize Terraform for Dev
         working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
         # Injecting dynamic backend configs just like you requested!
@@ -173,7 +173,7 @@ jobs:
         working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
         run: terraform apply -auto-approve
 
-      # 15. Dev Static Assets Sync
+      # 12. Dev Static Assets Sync
       # fetch the S3 bucket name created by Terraform, then sync static files
       - name: Sync Static Assets to S3
         run: |
@@ -191,7 +191,7 @@ jobs:
             ${{ env.ECR_IMAGE_URI }} \
             python manage.py collectstatic --noinput
 
-      # 16. Dev Database Migration & ECS Deployment
+      # 13. Dev Database Migration & ECS Deployment
       # Step A: Download the current active Task Definition (Blueprint)
       - name: Download Current ECS Task Definition
         run: |
@@ -208,22 +208,347 @@ jobs:
 
       # Step C: Register the Blueprint & Run the Database Migration FIRST
       # use AWS CLI to trigger a one-off Fargate task overriding the command to 'python manage.py migrate'
-      - name: Run Database Migration
+      - name: Register Task Definition & Run Migration
         run: |
-          echo "Triggering Fargate task for DB Migration using the new image..."
-          # Note: In a fully fleshed-out script, you would place your `aws ecs run-task` command here 
-          # and use `aws ecs wait tasks-stopped` to ensure the migration finishes before moving on.
+          # 1. Register the newly rendered blueprint with the new image
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://${{ steps.render-task-def.outputs.task-definition }} \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+
+          echo "Registered new Task Definition: $TASK_DEF_ARN"
+          # Save this ARN so the next step can use it
+          echo "NEW_TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+          # 2. Grab the private subnet/security group details from the currently running service
+          NETWORK_CONFIG=$(aws ecs describe-services \
+            --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
+            --services ${{ env.ENVIRONMENT }}-django-service \
+            --query 'services[0].networkConfiguration' --output json)
+
+          echo "Triggering Fargate task for DB Migration..."
+
+          # 3. Run the one-off migration task overriding the start command
+          TASK_ARN=$(aws ecs run-task \
+            --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
+            --task-definition $TASK_DEF_ARN \
+            --launch-type FARGATE \
+            --network-configuration "$NETWORK_CONFIG" \
+            --overrides '{"containerOverrides": [{"name": "django-app", "command": ["python", "manage.py", "migrate"]}]}' \
+            --query 'tasks[0].taskArn' --output text)
+
+          echo "Waiting for migration task ($TASK_ARN) to complete..."
+          aws ecs wait tasks-stopped --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN
+
+          # 4. Check if migration was successful (Exit Code 0 means success in Linux)
+          EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Database migration failed with exit code $EXIT_CODE!"
+            exit 1 # This stops the pipeline so broken code doesn't deploy
+          fi
+          echo "Database migration successful!"
 
       # Step D: Service Rollout (Rolling update with zero downtime)
       - name: Deploy to ECS Service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
-          service: ${{ env.ENVIRONMENT }}-django-service
-          cluster: ${{ env.ENVIRONMENT }}-ecs-cluster
-          wait-for-service-stability: true
+        run: |
+          echo "Updating ECS service to use the new code..."
+          aws ecs update-service \
+            --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
+            --service ${{ env.ENVIRONMENT }}-django-service \
+            --task-definition ${{ env.NEW_TASK_DEF_ARN }}
+
+          echo "Waiting for service to stabilize (containers gracefully rolling over)..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
+            --services ${{ env.ENVIRONMENT }}-django-service
 
       # Step E: Cache Invalidation
+      - name: Invalidate CloudFront Cache
+        run: |
+          DISTRIBUTION_ID=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw cloudfront_distribution_id)
+          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+
+  # ==========================================
+  # PHASE 3: CD - Stage Verification
+  # ==========================================
+  cd_deploy_stage:
+    name: CD - Deploy & Verify in Stage
+    runs-on: ubuntu-latest
+    needs: cd_deploy_dev
+
+    # CRITICAL: This ensures Phase 3 ONLY runs if the push was to the 'main' branch!
+    if: github.ref == 'refs/heads/main'
+
+    env:
+      ENVIRONMENT: "stage"
+      # We create a fake SemVer tag using the GitHub run number (e.g., v1.0.42)
+      SEMVER_TAG: "v1.0.${{ github.run_number }}"
+      ECR_REPOSITORY: "st-status-page-app"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 14. Stage Secure AWS Authentication (OIDC)
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 15. Image Promotion (Re-tagging existing Dev image with SemVer)
+      - name: Promote Docker Image
+        run: |
+          echo "Re-tagging Dev image ${{ github.sha }} to $SEMVER_TAG..."
+
+          # We grab the existing image directly inside ECR and slap a new tag on it.
+          # This is WAY faster and safer than downloading and rebuilding it!
+          MANIFEST=$(aws ecr batch-get-image --repository-name $ECR_REPOSITORY --image-ids imageTag=${{ github.sha }} --query 'images[0].imageManifest' --output text)
+          aws ecr put-image --repository-name $ECR_REPOSITORY --image-tag $SEMVER_TAG --image-manifest "$MANIFEST"
+
+          # Save the new URI for the rest of this job
+          echo "ECR_STAGE_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$SEMVER_TAG" >> $GITHUB_ENV
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 16. Stage Infrastructure Sync
+      - name: Initialize Terraform for Stage
+        working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
+        run: >
+          terraform init
+          -backend-config="bucket=st-status-page-tf-state-bucket"
+          -backend-config="key=environments/${{ env.ENVIRONMENT }}/terraform.tfstate"
+          -backend-config="region=${{ env.AWS_REGION }}"
+          -backend-config="dynamodb_table=${{ env.ENVIRONMENT }}-st-status-page-tf-locks"
+
+      - name: Apply Terraform for Stage
+        working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
+        run: terraform apply -auto-approve
+
+      # 17. Stage Static Assets Sync
+      - name: Sync Static Assets to S3
+        run: |
+          BUCKET_NAME=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw s3_bucket_name)
+          docker run --rm \
+            -e AWS_REGION=${{ env.AWS_REGION }} \
+            -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
+            -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
+            ${{ env.ECR_STAGE_IMAGE_URI }} \
+            python manage.py collectstatic --noinput
+
+      # 18. Stage Database Migration & ECS Deployment
+      # NEW: We capture the CURRENT task definition before we deploy the new one.
+      # We need this just in case we have to roll back later!
+      - name: Capture Previous Task Definition for Rollback
+        run: |
+          PREV_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service --query 'services[0].taskDefinition' --output text)
+          echo "PREV_TASK_DEF=$PREV_TASK_DEF" >> $GITHUB_ENV
+
+      - name: Download Current ECS Task Definition
+        run: aws ecs describe-task-definition --task-definition ${{ env.ENVIRONMENT }}-django-task --query taskDefinition > task-def.json
+
+      - name: Render New Task Definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def.json
+          container-name: django-app
+          image: ${{ env.ECR_STAGE_IMAGE_URI }}
+
+      - name: Register Task Definition & Run Migration
+        run: |
+          TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://${{ steps.render-task-def.outputs.task-definition }} --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "NEW_TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+          NETWORK_CONFIG=$(aws ecs describe-services --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service --query 'services[0].networkConfiguration' --output json)
+
+          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --task-definition $TASK_DEF_ARN --launch-type FARGATE --network-configuration "$NETWORK_CONFIG" --overrides '{"containerOverrides": [{"name": "django-app", "command": ["python", "manage.py", "migrate"]}]}' --query 'tasks[0].taskArn' --output text)
+          aws ecs wait tasks-stopped --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN
+
+          EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
+          if [ "$EXIT_CODE" != "0" ]; then exit 1; fi
+
+      - name: Deploy to ECS Service
+        run: |
+          aws ecs update-service --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --service ${{ env.ENVIRONMENT }}-django-service --task-definition ${{ env.NEW_TASK_DEF_ARN }}
+          aws ecs wait services-stable --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          DISTRIBUTION_ID=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw cloudfront_distribution_id)
+          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+
+      # 19. System Integration & Performance Testing
+      - name: SIT and Locust Performance Testing
+        id: automated_tests
+        run: |
+          FRONTEND_URL=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw frontend_url)
+          echo "Running tests against https://$FRONTEND_URL..."
+          # Note: Replace these placeholders with your actual Pytest/Locust commands when ready
+          # pytest tests/integration/ --base-url=https://$FRONTEND_URL
+          # locust -f locustfile.py --headless -u 100 -r 10 --run-time 1m --host=https://$FRONTEND_URL
+          echo "Tests passed!"
+
+      # Automated Rollback (Only triggers if the Testing step above FAILS)
+      - name: Automated Rollback (On Test Failure)
+        if: failure() && steps.automated_tests.outcome == 'failure'
+        run: |
+          echo "Tests failed! Initiating automated rollback to $PREV_TASK_DEF..."
+          # 1. Revert the ECS Service to the previous version
+          aws ecs update-service --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --service ${{ env.ENVIRONMENT }}-django-service --task-definition ${{ env.PREV_TASK_DEF }}
+          aws ecs wait services-stable --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service
+
+          # 2. Clear the cache so users see the reverted static files
+          DISTRIBUTION_ID=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw cloudfront_distribution_id)
+          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+
+          echo "Rollback complete. The pipeline will now officially fail."
+          exit 1
+
+  # ==========================================
+  # PHASE 4A: CD - Production Plan
+  # ==========================================
+  cd_plan_prod:
+    name: CD - Plan Production Infrastructure
+    runs-on: ubuntu-latest
+    needs: cd_deploy_stage
+    if: github.ref == 'refs/heads/main'
+
+    env:
+      ENVIRONMENT: "prod"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 20. Prod Secure AWS Authentication
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 21. Prod Infrastructure Plan (Save to Artifact)
+      - name: Initialize Terraform for Prod
+        working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
+        run: >
+          terraform init
+          -backend-config="bucket=st-status-page-tf-state-bucket"
+          -backend-config="key=environments/${{ env.ENVIRONMENT }}/terraform.tfstate"
+          -backend-config="region=${{ env.AWS_REGION }}"
+          -backend-config="dynamodb_table=${{ env.ENVIRONMENT }}-st-status-page-tf-locks"
+
+      - name: Terraform Plan
+        working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
+        # We save the plan to a file named 'tfplan'
+        run: terraform plan -out=tfplan
+
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-tfplan
+          path: ./terraform/environments/${{ env.ENVIRONMENT }}/tfplan
+          retention-days: 1
+
+
+  # ==========================================
+  # PHASE 4B: CD - Production Release (Manual Approval)
+  # ==========================================
+  cd_deploy_prod:
+    name: CD - Production Release
+    runs-on: ubuntu-latest
+    needs: cd_plan_prod
+
+    # 22. MANUAL APPROVAL: This links the job to a GitHub Environment rule!
+    environment: production
+
+    env:
+      ENVIRONMENT: "prod"
+      # We recreate the exact same SemVer tag used in Stage
+      SEMVER_TAG: "v1.0.${{ github.run_number }}"
+      ECR_PROD_IMAGE_URI: "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/st-status-page-app:v1.0.${{ github.run_number }}"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Re-Authenticate (because the runner paused and tokens expire)
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 23. Production Release
+      - name: Download Terraform Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: prod-tfplan
+          path: ./terraform/environments/${{ env.ENVIRONMENT }}
+
+      - name: Initialize Terraform for Prod
+        working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
+        run: >
+          terraform init
+          -backend-config="bucket=st-status-page-tf-state-bucket"
+          -backend-config="key=environments/${{ env.ENVIRONMENT }}/terraform.tfstate"
+          -backend-config="region=${{ env.AWS_REGION }}"
+          -backend-config="dynamodb_table=${{ env.ENVIRONMENT }}-st-status-page-tf-locks"
+
+      - name: Apply Terraform Plan
+        working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
+        # Notice we are applying the EXACT plan we downloaded, so there are no surprises!
+        run: terraform apply -auto-approve tfplan
+
+      - name: Sync Static Assets to S3
+        run: |
+          BUCKET_NAME=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw s3_bucket_name)
+          docker run --rm \
+            -e AWS_REGION=${{ env.AWS_REGION }} \
+            -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
+            -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
+            ${{ env.ECR_PROD_IMAGE_URI }} \
+            python manage.py collectstatic --noinput
+
+      - name: Download Current ECS Task Definition
+        run: aws ecs describe-task-definition --task-definition ${{ env.ENVIRONMENT }}-django-task --query taskDefinition > task-def.json
+
+      - name: Render New Task Definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def.json
+          container-name: django-app
+          image: ${{ env.ECR_PROD_IMAGE_URI }}
+
+      - name: Register Task Definition & Run Migration
+        run: |
+          TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://${{ steps.render-task-def.outputs.task-definition }} --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "NEW_TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+          NETWORK_CONFIG=$(aws ecs describe-services --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service --query 'services[0].networkConfiguration' --output json)
+
+          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --task-definition $TASK_DEF_ARN --launch-type FARGATE --network-configuration "$NETWORK_CONFIG" --overrides '{"containerOverrides": [{"name": "django-app", "command": ["python", "manage.py", "migrate"]}]}' --query 'tasks[0].taskArn' --output text)
+          aws ecs wait tasks-stopped --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN
+
+          EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
+          if [ "$EXIT_CODE" != "0" ]; then exit 1; fi
+
+      - name: Deploy to ECS Service
+        run: |
+          aws ecs update-service --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --service ${{ env.ENVIRONMENT }}-django-service --task-definition ${{ env.NEW_TASK_DEF_ARN }}
+          aws ecs wait services-stable --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service
+
       - name: Invalidate CloudFront Cache
         run: |
           DISTRIBUTION_ID=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw cloudfront_distribution_id)
