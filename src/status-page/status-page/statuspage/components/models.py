@@ -36,11 +36,11 @@ class ComponentGroup(StatusPageModel):
     @property
     def should_expand(self):
         if self.collapse == ComponentGroupCollapseChoices.ALWAYS:
-            return 'true'
+            return True
         for component in self.components.all():
             if component.status != ComponentStatusChoices.OPERATIONAL:
-                return 'true'
-        return 'false'
+                return True
+        return False
 
 
 class Component(StatusPageModel):
@@ -83,9 +83,9 @@ class Component(StatusPageModel):
         return reverse('components:component', args=[self.pk])
 
     def get_status_color(self):
-        (color, _) = ComponentStatusChoices.colors.get(self.status)
+        (color, _) = ComponentStatusChoices.colors.get(self.status, ('#000000', '#ffffff'))
         return color
 
     def get_status_text_color(self):
-        (_, color) = ComponentStatusChoices.colors.get(self.status)
+        (_, color) = ComponentStatusChoices.colors.get(self.status, ('#000000', '#ffffff'))
         return color

@@ -11,9 +11,7 @@ on:
 env:
   AWS_REGION: "us-east-1"
   # We use the GitHub commit ID (sha) as our unique Docker image tag
-  IMAGE_TAG: ${{ github.sha }} 
-  # AWS_ACCOUNT_ID as a Repository Secret in GitHub needs to be added
-  AWS_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
+  IMAGE_TAG: ${{ github.sha }}
 
 # The pipeline requires special permissions to request the temporary OIDC token from AWS
 permissions:
@@ -80,7 +78,7 @@ jobs:
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-to-assume: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
           aws-region: ${{ env.AWS_REGION }}
 
       # 7. Global Infrastructure Sync (Ensure ECR exists before we push to it)
@@ -152,8 +150,12 @@ jobs:
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-to-assume: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

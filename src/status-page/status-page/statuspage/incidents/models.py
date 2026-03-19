@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from components.models import Component
 from subscribers.models import Subscriber
 from utilities.models import IncidentMaintenanceModel, IncidentMaintenanceUpdateModel
-
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 
 class Incident(IncidentMaintenanceModel):
     status = models.CharField(
@@ -45,28 +46,19 @@ class Incident(IncidentMaintenanceModel):
 
         super().save(**kwargs)
 
-        if is_new and self.visibility:
-            try:
-                subscribers = Subscriber.objects.filter(incident_subscriptions=True)
-
-                for subscriber in subscribers:
-                    subscriber.send_mail(subject=f'Incident "{self.title}": Created', template='incidents/created', context={
-                        'incident': self,
-                        'components': self.components.filter(visibility=True),
-                    })
-            except:
-                pass
+        if is_new:
+            self._was_just_created = True
 
     def get_impact_color(self):
-        (color, _, __) = IncidentImpactChoices.colors.get(self.impact)
+        (color, _, __) = IncidentImpactChoices.colors.get(self.impact, ('#000000', '#000000', '#ffffff'))
         return color
 
     def get_impact_border_color(self):
-        (_, color, __) = IncidentImpactChoices.colors.get(self.impact)
+        (_, color, __) = IncidentImpactChoices.colors.get(self.impact, ('#000000', '#000000', '#ffffff'))
         return color
 
     def get_impact_text_color(self):
-        (_, __, color) = IncidentImpactChoices.colors.get(self.impact)
+        (_, __, color) = IncidentImpactChoices.colors.get(self.impact, ('#000000', '#000000', '#ffffff'))
         return color
 
 
@@ -112,5 +104,23 @@ class IncidentUpdate(IncidentMaintenanceUpdateModel):
                         'update': self,
                         'components': self.incident.components.filter(visibility=True),
                     })
-            except:
+            except Exception:
                 pass
+
+
+@receiver(m2m_changed, sender=Incident.components.through)
+def send_incident_creation_email(sender, instance, action, **kwargs):
+    if action == "post_add" and getattr(instance, '_was_just_created', False) and instance.visibility:
+        try:
+            subscribers = Subscriber.objects.filter(incident_subscriptions=True)
+
+            for subscriber in subscribers:
+                subscriber.send_mail(subject=f'Incident "{instance.title}": Created', template='incidents/created', context={
+                    'incident': instance,
+                    'components': instance.components.filter(visibility=True),
+                })
+        except Exception:
+            pass
+            
+        # Ensure it only sends once
+        instance._was_just_created = False
