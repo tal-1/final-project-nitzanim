@@ -104,7 +104,7 @@ class IncidentUpdate(IncidentMaintenanceUpdateModel):
                         'update': self,
                         'components': self.incident.components.filter(visibility=True),
                     })
-            except:
+            except Exception:
                 pass
 
 
