@@ -50,15 +50,15 @@ class Incident(IncidentMaintenanceModel):
             self._was_just_created = True
 
     def get_impact_color(self):
-        (color, _, __) = IncidentImpactChoices.colors.get(self.impact)
+        (color, _, __) = IncidentImpactChoices.colors.get(self.impact, ('#000000', '#000000', '#ffffff'))
         return color
 
     def get_impact_border_color(self):
-        (_, color, __) = IncidentImpactChoices.colors.get(self.impact)
+        (_, color, __) = IncidentImpactChoices.colors.get(self.impact, ('#000000', '#000000', '#ffffff'))
         return color
 
     def get_impact_text_color(self):
-        (_, __, color) = IncidentImpactChoices.colors.get(self.impact)
+        (_, __, color) = IncidentImpactChoices.colors.get(self.impact, ('#000000', '#000000', '#ffffff'))
         return color
 
 
