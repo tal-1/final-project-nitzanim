@@ -12,6 +12,7 @@ env:
   AWS_REGION: "us-east-1"
   # We use the GitHub commit ID (sha) as our unique Docker image tag
   IMAGE_TAG: ${{ github.sha }}
+  AWS_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
 
 # The pipeline requires special permissions to request the temporary OIDC token from AWS
 permissions:
@@ -71,14 +72,15 @@ jobs:
 
       # 5. Unit Testing
       - name: Run Pytest
-        # || echo <"message"> needs to be deleted after writing the first test
-        run: pytest || echo "No tests written yet, skipping failure for now"
+        run: |
+          # We use python manage.py test because this is a Django project
+          python manage.py test
 
       # 6. Secure AWS Authentication using OIDC
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       # 7. Global Infrastructure Sync (Ensure ECR exists before we push to it)
@@ -150,7 +152,7 @@ jobs:
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
