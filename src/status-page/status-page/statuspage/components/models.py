@@ -36,11 +36,11 @@ class ComponentGroup(StatusPageModel):
     @property
     def should_expand(self):
         if self.collapse == ComponentGroupCollapseChoices.ALWAYS:
-            return 'true'
+            return True
         for component in self.components.all():
             if component.status != ComponentStatusChoices.OPERATIONAL:
-                return 'true'
-        return 'false'
+                return True
+        return False
 
 
 class Component(StatusPageModel):
