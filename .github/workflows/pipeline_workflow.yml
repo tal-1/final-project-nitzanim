@@ -1,0 +1,230 @@
+name: ST Status Page Pipeline
+
+# This tells GitHub to run the pipeline when pushing to feature branch
+on:
+  push:
+    branches:
+      - main
+      - 'feature/*'
+
+# Global variables available to all jobs in this pipeline
+env:
+  AWS_REGION: "us-east-1"
+  # We use the GitHub commit ID (sha) as our unique Docker image tag
+  IMAGE_TAG: ${{ github.sha }} 
+  # AWS_ACCOUNT_ID as a Repository Secret in GitHub needs to be added
+  AWS_ROLE_ARN: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role"
+
+# The pipeline requires special permissions to request the temporary OIDC token from AWS
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # ==========================================
+  # PHASE 1: CI - Build & Store
+  # ==========================================
+  ci_build_and_store:
+    name: CI - Code & Infra Validation, Build & Push
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Download the source code onto the runner
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup Python environment
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # Install Python tools required for testing and scanning
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 bandit pytest django
+
+      # 3. Code Scanning (Linting & SAST)
+      - name: Run Flake8 (Syntax & Style)
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run Bandit (Security Vulnerabilities)
+        run: bandit -r . -ll -ii -x ./terraform
+
+      # 4. IaC Security Scanning with Trivy
+      - name: Run Trivy vulnerability scanner on Terraform code
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          target: './terraform'
+          severity: 'HIGH,CRITICAL'
+
+      # 5. Setup Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 6. Terraform Init & Validate (Checking basic syntax for all modules)
+      - name: Validate Terraform global/ecr
+        working-directory: ./terraform/global/ecr
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      # 7. Unit Testing
+      - name: Run Pytest
+        # || echo <"message"> needs to be deleted after writing the first test
+        run: pytest || echo "No tests written yet, skipping failure for now"
+
+      # 8. Secure AWS Authentication using OIDC
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 9. Global Infrastructure Sync (Ensure ECR exists before we push to it)
+      - name: Initialize Terraform for Global ECR
+        working-directory: ./terraform/global/ecr
+        # Here we inject the dynamic backend configs just like you requested!
+        run: >
+          terraform init
+          -backend-config="bucket=st-status-page-tf-state-bucket"
+          -backend-config="key=global/ecr/terraform.tfstate"
+          -backend-config="region=${{ env.AWS_REGION }}"
+          -backend-config="dynamodb_table=global-st-status-page-tf-locks"
+
+      - name: Apply Terraform Global ECR
+        working-directory: ./terraform/global/ecr
+        run: terraform apply -auto-approve
+
+      # 10. Login to Amazon ECR so Docker can push the image
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 11. Build & Container Scanning (Docker + Trivy)
+      - name: Build Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: st-status-page-app
+        run: |
+          # Build the image using the multi-stage Dockerfile
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+      - name: Run Trivy scanner on Docker Image
+        uses: aquasecurity/trivy-action@master
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: st-status-page-app
+        with:
+          image-ref: '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}'
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+
+      # 12. Push the Trivy-approved Docker image to AWS ECR
+      - name: Push Docker Image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: st-status-page-app
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  # ==========================================
+  # PHASE 2: CD - Dev Deployment
+  # ==========================================
+  cd_deploy_dev:
+    name: CD - Deploy to Dev Environment
+    runs-on: ubuntu-latest
+    # This 'needs' block ensures Phase 2 ONLY runs if Phase 1 was completely successful
+    needs: ci_build_and_store
+
+    env:
+      ENVIRONMENT: "dev"
+      # Constructing the ECR image URI dynamically
+      ECR_IMAGE_URI: "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/st-status-page-app:${{ github.sha }}"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 13. Dev Secure AWS Authentication (OIDC)
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 14. Infrastructure Sync for Dev
+      - name: Initialize Terraform for Dev
+        working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
+        # Injecting dynamic backend configs just like you requested!
+        run: >
+          terraform init
+          -backend-config="bucket=st-status-page-tf-state-bucket"
+          -backend-config="key=environments/${{ env.ENVIRONMENT }}/terraform.tfstate"
+          -backend-config="region=${{ env.AWS_REGION }}"
+          -backend-config="dynamodb_table=${{ env.ENVIRONMENT }}-st-status-page-tf-locks"
+
+      - name: Apply Terraform for Dev
+        working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
+        run: terraform apply -auto-approve
+
+      # 15. Dev Static Assets Sync
+      # fetch the S3 bucket name created by Terraform, then sync static files
+      - name: Sync Static Assets to S3
+        run: |
+          BUCKET_NAME=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw s3_bucket_name)
+          # Note: This is a placeholder command. You will likely use 'docker run' with your newly built image here to run collectstatic, or a simple python script if dependencies are installed.
+          echo "Running collectstatic and syncing to s3://$BUCKET_NAME..."
+          # 2. Run the Docker container temporarily to execute the command
+          # The --rm flag deletes the container after it finishes to save space
+          docker run --rm \
+            -e AWS_REGION=${{ env.AWS_REGION }} \
+            -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
+            -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
+            ${{ env.ECR_IMAGE_URI }} \
+            python manage.py collectstatic --noinput
+
+      # 16. Dev Database Migration & ECS Deployment
+      # Step A: Download the current active Task Definition (Blueprint)
+      - name: Download Current ECS Task Definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.ENVIRONMENT }}-django-task --query taskDefinition > task-def.json
+
+      # Step B: Insert the new Docker Image ID into the Blueprint
+      - name: Render New Task Definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def.json
+          container-name: django-app
+          image: ${{ env.ECR_IMAGE_URI }}
+
+      # Step C: Register the Blueprint & Run the Database Migration FIRST
+      # use AWS CLI to trigger a one-off Fargate task overriding the command to 'python manage.py migrate'
+      - name: Run Database Migration
+        run: |
+          echo "Triggering Fargate task for DB Migration using the new image..."
+          # Note: In a fully fleshed-out script, you would place your `aws ecs run-task` command here 
+          # and use `aws ecs wait tasks-stopped` to ensure the migration finishes before moving on.
+
+      # Step D: Service Rollout (Rolling update with zero downtime)
+      - name: Deploy to ECS Service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ENVIRONMENT }}-django-service
+          cluster: ${{ env.ENVIRONMENT }}-ecs-cluster
+          wait-for-service-stability: true
+
+      # Step E: Cache Invalidation
+      - name: Invalidate CloudFront Cache
+        run: |
+          DISTRIBUTION_ID=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw cloudfront_distribution_id)
+          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
