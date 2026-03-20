@@ -135,8 +135,8 @@ jobs:
           # Tell Pytest where the settings file is located
           DJANGO_SETTINGS_MODULE: "statuspage.settings"
         run: |
-          # use python manage.py test because this is a Django project
-          python
+          # Use Django's native runner so it automatically finds all tests.py files
+          python manage.py test
 
       # 7. Global Infrastructure Sync (Ensure ECR exists before we push to it)
       - name: Initialize Terraform for Global ECR
