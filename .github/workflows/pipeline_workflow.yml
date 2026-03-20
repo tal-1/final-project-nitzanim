@@ -70,7 +70,7 @@ jobs:
           # 1. Install the actual app dependencies so Django can boot
           pip install -r ./src/status-page/status-page/requirements.txt
           # 2. Add pytest-django to the testing tools
-          pip install flake8 bandit pytest pytest-django rq-scheduler
+          pip install flake8 bandit pytest pytest-django
 
       # 2. Code Scanning (Linting & SAST)
       - name: Run Flake8 (Syntax & Style)
