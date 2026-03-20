@@ -8,7 +8,6 @@
 #    local state into the new S3 bucket?" You say "yes".
 # ==============================================================================
 
-/*
 terraform {
   backend "s3" {
     bucket         = "st-status-page-tf-state-bucket"  # Change to your actual bucket name
@@ -16,4 +15,3 @@ terraform {
     encrypt        = true
   }
 }
-*/
