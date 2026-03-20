@@ -142,12 +142,13 @@ jobs:
 
     env:
       ENVIRONMENT: "dev"
-      # Constructing the ECR image URI dynamically
-      ECR_IMAGE_URI: "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/st-status-page-app:${{ github.sha }}"
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set ECR Image URI
+        run: echo "ECR_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/st-status-page-app:${{ github.sha }}" >> $GITHUB_ENV
 
       # 10. Dev Secure AWS Authentication (OIDC)
       - name: Configure AWS Credentials via OIDC
@@ -476,11 +477,13 @@ jobs:
       ENVIRONMENT: "prod"
       # We recreate the exact same SemVer tag used in Stage
       SEMVER_TAG: "v1.0.${{ github.run_number }}"
-      ECR_PROD_IMAGE_URI: "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/st-status-page-app:v1.0.${{ github.run_number }}"
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        
+      - name: Set Prod ECR Image URI
+        run: echo "ECR_PROD_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/st-status-page-app:${{ env.SEMVER_TAG }}" >> $GITHUB_ENV 
 
       # Re-Authenticate (because the runner paused and tokens expire)
       - name: Configure AWS Credentials via OIDC
