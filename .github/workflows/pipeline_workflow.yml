@@ -126,6 +126,7 @@ jobs:
           }
           SECRET_KEY = 'dummy-secret-key-for-ci-testing-only'
           SITE_URL = 'http://localhost'
+          PLUGINS = ['sp_external_status_providers', 'sp_uptimerobot']
           EOF
 
       # 6. Unit Testing
