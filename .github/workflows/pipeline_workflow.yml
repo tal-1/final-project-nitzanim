@@ -34,26 +34,23 @@ jobs:
           POSTGRES_DB: statuspage
           POSTGRES_USER: statuspage
           POSTGRES_PASSWORD: password
-        # Maps the container's port 5432 to the runner's localhost:5432
         ports:
           - 5432:5432
-        # Wait until Postgres is actually ready before proceeding
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
-     # Spin up a temporary Valkey cache for testing (Drop-in Redis replacement)
       valkey:
-       image: valkey/valkey:8  # Using the official Valkey image
-       ports:
-        - 6379:6379           # Valkey uses the exact same port as Redis
-       options: >-
-        --health-cmd "valkey-cli ping"
-        --health-interval 10s
-        --health-timeout 5s
-        --health-retries 5
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       # 1. Download the source code onto the runner
