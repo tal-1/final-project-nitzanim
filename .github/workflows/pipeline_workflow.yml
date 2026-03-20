@@ -47,13 +47,13 @@ jobs:
      # Spin up a temporary Valkey cache for testing (Drop-in Redis replacement)
       valkey:
        image: valkey/valkey:8  # Using the official Valkey image
-        ports:
-          - 6379:6379           # Valkey uses the exact same port as Redis
-        options: >-
-          --health-cmd "valkey-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+       ports:
+        - 6379:6379           # Valkey uses the exact same port as Redis
+       options: >-
+        --health-cmd "valkey-cli ping"
+        --health-interval 10s
+        --health-timeout 5s
+        --health-retries 5
 
     steps:
       # 1. Download the source code onto the runner
