@@ -27,6 +27,23 @@ jobs:
     name: CI - Code & Infra Validation, Build & Push
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: statuspage
+          POSTGRES_USER: statuspage
+          POSTGRES_PASSWORD: password
+        # Maps the container's port 5432 to the runner's localhost:5432
+        ports:
+          - 5432:5432
+        # Wait until Postgres is actually ready before proceeding
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       # 1. Download the source code onto the runner
       - name: Checkout Code
@@ -86,6 +103,11 @@ jobs:
         env:
           # Tell Pytest where the settings file is located
           DJANGO_SETTINGS_MODULE: "statuspage.settings"
+          # Override the host so it looks at the service container
+          DB_HOST: "localhost"
+          DB_USER: "statuspage"
+          DB_PASSWORD: "password"
+          DB_NAME: "statuspage"
         run: |
           # use python manage.py test because this is a Django project
           python manage.py test
