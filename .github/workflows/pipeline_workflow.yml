@@ -44,6 +44,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+     # Spin up a temporary Valkey cache for testing (Drop-in Redis replacement)
+      valkey:
+       image: valkey/valkey:8  # Using the official Valkey image
+        ports:
+          - 6379:6379           # Valkey uses the exact same port as Redis
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       # 1. Download the source code onto the runner
       - name: Checkout Code
@@ -97,17 +108,35 @@ jobs:
           terraform init -backend=false
           terraform validate
 
+      # Create a dummy configuration.py file for the tests
+      - name: Generate Django Configuration
+        working-directory: ./src/status-page/status-page/statuspage/statuspage
+        run: |
+          cat << 'EOF' > configuration.py
+          ALLOWED_HOSTS = ['*']
+          DATABASE = {
+              'NAME': 'statuspage',
+              'USER': 'statuspage',
+              'PASSWORD': 'password',
+              'HOST': 'localhost',
+              'PORT': '5432',
+              'CONN_MAX_AGE': 300,
+          }
+          # We name this REDIS because settings.py expects it, but it connects to Valkey!
+          REDIS = {
+              'tasks': {'HOST': 'localhost', 'PORT': 6379},
+              'caching': {'HOST': 'localhost', 'PORT': 6379}
+          }
+          SECRET_KEY = 'dummy-secret-key-for-ci-testing-only'
+          SITE_URL = 'http://localhost'
+          EOF
+
       # 6. Unit Testing
       - name: Run Pytest
         working-directory: ./src/status-page/status-page/statuspage
         env:
           # Tell Pytest where the settings file is located
           DJANGO_SETTINGS_MODULE: "statuspage.settings"
-          # Override the host so it looks at the service container
-          DB_HOST: "localhost"
-          DB_USER: "statuspage"
-          DB_PASSWORD: "password"
-          DB_NAME: "statuspage"
         run: |
           # use python manage.py test because this is a Django project
           python manage.py test
