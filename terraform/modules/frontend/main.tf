@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 # ==========================================
 # 1. S3 Bucket (For Django Static/Media Files)
 # ==========================================
