@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "private": true,
   "scripts": {
+    "build": "yarn bundle",
     "bundle": "node bundle.js",
     "bundle:styles": "node bundle.js --styles",
     "bundle:scripts": "node bundle.js --scripts",

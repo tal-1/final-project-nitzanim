@@ -8,7 +8,7 @@ COPY statuspage/project-static/package.json statuspage/project-static/yarn.lock 
 RUN yarn install
 # Copy the rest of the static source code and build
 COPY statuspage/project-static/ ./
-RUN yarn run build
+RUN yarn run bundle
 
 # ==========================================
 # STAGE 2: Build the Backend (Python)
