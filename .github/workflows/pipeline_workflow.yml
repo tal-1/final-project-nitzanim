@@ -72,6 +72,7 @@ jobs:
 
       # 5. Unit Testing
       - name: Run Pytest
+        working-directory: ./src/status-page/status-page/statuspage
         run: |
           # We use python manage.py test because this is a Django project
           python manage.py test
