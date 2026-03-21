@@ -200,6 +200,20 @@ jobs:
     # This 'needs' block ensures Phase 2 ONLY runs if Phase 1 was completely successful
     needs: ci_build_and_store
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: statuspage
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+      valkey:
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+
     env:
       ENVIRONMENT: "dev"
 
@@ -248,14 +262,14 @@ jobs:
           echo "Running collectstatic and syncing to s3://$BUCKET_NAME..."
           # 2. Run the Docker container temporarily to execute the command
           # The --rm flag deletes the container after it finishes to save space
-          docker run --rm \
+          docker run --rm --network host \
             -e AWS_REGION=${{ env.AWS_REGION }} \
             -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
             -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
             -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
             ${{ env.ECR_IMAGE_URI }} \
-            python manage.py collectstatic --noinput
+            python statuspage/manage.py collectstatic --noinput
 
       # 13. Dev Database Migration & ECS Deployment
       # Step A: Download the current active Task Definition (Blueprint)
@@ -395,15 +409,14 @@ jobs:
       - name: Sync Static Assets to S3
         run: |
           BUCKET_NAME=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw s3_bucket_name)
-          docker run --rm \
+          docker run --rm --network host \
             -e AWS_REGION=${{ env.AWS_REGION }} \
             -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
             -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
             -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
-            ${{ env.ECR_STAGE_IMAGE_URI }} \
-            python manage.py collectstatic --noinput
-
+            ${{ env.ECR_IMAGE_URI }} \
+            python statuspage/manage.py collectstatic --noinput
       # 18. Stage Database Migration & ECS Deployment
       # NEW: We capture the CURRENT task definition before we deploy the new one.
       # We need this just in case we have to roll back later!
@@ -541,7 +554,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        
+
       - name: Set Prod ECR Image URI
         run: echo "ECR_PROD_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/st-status-page-app:${{ env.SEMVER_TAG }}" >> $GITHUB_ENV 
 
@@ -579,14 +592,14 @@ jobs:
       - name: Sync Static Assets to S3
         run: |
           BUCKET_NAME=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw s3_bucket_name)
-          docker run --rm \
+          docker run --rm --network host \
             -e AWS_REGION=${{ env.AWS_REGION }} \
             -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
             -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
             -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
-            ${{ env.ECR_PROD_IMAGE_URI }} \
-            python manage.py collectstatic --noinput
+            ${{ env.ECR_IMAGE_URI }} \
+            python statuspage/manage.py collectstatic --noinput
 
       - name: Download Current ECS Task Definition
         run: aws ecs describe-task-definition --task-definition ${{ env.ENVIRONMENT }}-django-task --query taskDefinition > task-def.json
