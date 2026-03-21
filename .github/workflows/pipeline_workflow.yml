@@ -326,7 +326,7 @@ jobs:
             --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
             --task-definition $TASK_DEF_ARN \
             --launch-type FARGATE \
-            --network-configuration "$NETWORK_CONFIG" \
+            --network-configuration "awsvpcConfiguration={subnets=[subnet-0ea5cc5d339303354,subnet-0c358356b2e18263e],securityGroups=[sg-0d34dcedc36332dba],assignPublicIp=DISABLED}" \
             --overrides '{"containerOverrides": [{"name": "django-app", "command": ["sh", "-c", "for i in 1 2 3 4 5; do python statuspage/manage.py migrate --noinput && exit 0 || sleep 15; done; exit 1"]}]}' \
             --query 'tasks[0].taskArn' --output text)
 
@@ -482,8 +482,6 @@ jobs:
         run: |
           TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://${{ steps.render-task-def.outputs.task-definition }} --query 'taskDefinition.taskDefinitionArn' --output text)
           echo "NEW_TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
-
-          NETWORK_CONFIG=$(aws ecs describe-services --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service --query 'services[0].networkConfiguration' --output json)
 
           TASK_ARN=$(aws ecs run-task --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --task-definition $TASK_DEF_ARN --launch-type FARGATE --network-configuration "$NETWORK_CONFIG" --overrides '{"containerOverrides": [{"name": "django-app", "command": ["sh", "-c", "for i in 1 2 3 4 5; do python statuspage/manage.py migrate --noinput && exit 0 || sleep 15; done; exit 1"]}]}' --query 'tasks[0].taskArn' --output text)
           aws ecs wait tasks-stopped --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN
