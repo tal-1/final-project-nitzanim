@@ -200,6 +200,31 @@ jobs:
     # This 'needs' block ensures Phase 2 ONLY runs if Phase 1 was completely successful
     needs: ci_build_and_store
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: statuspage
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      valkey:
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       ENVIRONMENT: "dev"
 
@@ -249,13 +274,15 @@ jobs:
           # 2. Run the Docker container temporarily to execute the command
           # The --rm flag deletes the container after it finishes to save space
           docker run --rm \
+            --network host \
+            --entrypoint python \
             -e AWS_REGION=${{ env.AWS_REGION }} \
             -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
             -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
             -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
             ${{ env.ECR_IMAGE_URI }} \
-            python manage.py collectstatic --noinput
+            statuspage/manage.py collectstatic --noinput
 
       # 13. Dev Database Migration & ECS Deployment
       # Step A: Download the current active Task Definition (Blueprint)
@@ -344,6 +371,31 @@ jobs:
     # CRITICAL: This ensures Phase 3 ONLY runs if the push was to the 'main' branch!
     if: github.ref == 'refs/heads/main'
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: statuspage
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      valkey:
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       ENVIRONMENT: "stage"
       # We create a fake SemVer tag using the GitHub run number (e.g., v1.0.42)
@@ -396,13 +448,15 @@ jobs:
         run: |
           BUCKET_NAME=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw s3_bucket_name)
           docker run --rm \
+            --network host \
+            --entrypoint python \
             -e AWS_REGION=${{ env.AWS_REGION }} \
             -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
             -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
             -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
             ${{ env.ECR_STAGE_IMAGE_URI }} \
-            python manage.py collectstatic --noinput
+            statuspage/manage.py collectstatic --noinput
 
       # 18. Stage Database Migration & ECS Deployment
       # NEW: We capture the CURRENT task definition before we deploy the new one.
@@ -533,6 +587,31 @@ jobs:
     # 22. MANUAL APPROVAL: This links the job to a GitHub Environment rule!
     environment: production
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: statuspage
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      valkey:
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       ENVIRONMENT: "prod"
       # We recreate the exact same SemVer tag used in Stage
@@ -580,13 +659,15 @@ jobs:
         run: |
           BUCKET_NAME=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw s3_bucket_name)
           docker run --rm \
+            --network host \
+            --entrypoint python \
             -e AWS_REGION=${{ env.AWS_REGION }} \
             -e AWS_STORAGE_BUCKET_NAME=$BUCKET_NAME \
             -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
             -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
             ${{ env.ECR_PROD_IMAGE_URI }} \
-            python manage.py collectstatic --noinput
+            statuspage/manage.py collectstatic --noinput
 
       - name: Download Current ECS Task Definition
         run: aws ecs describe-task-definition --task-definition ${{ env.ENVIRONMENT }}-django-task --query taskDefinition > task-def.json
