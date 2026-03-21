@@ -17,6 +17,8 @@ resource "aws_lb_target_group" "app" {
   vpc_id      = var.vpc_id
   target_type = "ip" # REQUIRED for AWS Fargate
 
+  deregistration_delay = 30
+
   # The ALB will constantly ping this path to make sure the app hasn't crashed
   health_check {
     path                = "/" # Change to "/health/" if you build a specific health endpoint
