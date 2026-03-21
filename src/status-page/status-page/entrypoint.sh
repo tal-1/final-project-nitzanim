@@ -1,12 +1,13 @@
 #!/bin/bash
-# entrypoint.sh
+set -e
 
-echo "Gathering static files..."
-python statuspage/manage.py collectstatic --noinput
+# If no arguments are passed from AWS, run the normal web server
+if [ $# -eq 0 ]; then
+    echo "Starting Gunicorn server..."
+    exec gunicorn -c statuspage/contrib/gunicorn.py statuspage.wsgi
 
-echo "Running database migrations..."
-python statuspage/manage.py migrate --noinput
-
-echo "Starting Gunicorn server..."
-# Start the server (adjust the path to gunicorn.py if needed)
-exec gunicorn -c statuspage/contrib/gunicorn.py statuspage.wsgi
+# If AWS passes a command (like "python manage.py migrate"), execute that instead!
+else
+    echo "Executing command: $@"
+    exec "$@"
+fi
