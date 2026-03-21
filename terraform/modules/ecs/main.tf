@@ -97,10 +97,10 @@ resource "aws_ecs_task_definition" "app" {
     # Non-sensitive environment variables
     environment = [
       { name = "DB_HOST", value = var.db_endpoint },
-      { name = "REDIS_HOST", value = var.cache_endpoint },
       { name = "DB_NAME", value = "statuspage" },
       { name = "DB_USER", value = "postgres" },
       { name = "DB_PORT", value = "5432" },
+      { name = "REDIS_HOST", value = var.cache_endpoint },
       { name = "REDIS_PORT", value = "6379" }
     ]
 

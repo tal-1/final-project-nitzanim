@@ -91,9 +91,15 @@ resource "aws_elasticache_replication_group" "main" {
   engine                     = "valkey"
   engine_version             = "7.2" # Or whichever Valkey version you are targeting
   node_type                  = "cache.t4g.micro" # Example instance type
+  subnet_group_name          = aws_elasticache_subnet_group.cache_subnets.name
   
+  security_group_ids         = [var.cache_sg_id]
+
   # Even if you only want 1 node, this API is required for Valkey
   num_cache_clusters         = 1 
-  
-  # ... your subnet group and security group variables ...
+}
+
+resource "aws_elasticache_subnet_group" "cache_subnets" {
+  name       = "${var.environment}-cache-subnets"
+  subnet_ids = var.private_subnets
 }
