@@ -12,3 +12,8 @@ output "s3_bucket_name" {
   description = "The name of the S3 bucket holding the static files"
   value       = aws_s3_bucket.static.id
 }
+
+output "cloudfront_distribution_id" {
+  description = "The ID of the CloudFront distribution"
+  value       = aws_cloudfront_distribution.main.id
+}
