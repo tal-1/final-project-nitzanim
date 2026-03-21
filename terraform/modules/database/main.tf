@@ -62,6 +62,7 @@ resource "aws_db_instance" "main" {
   instance_class         = "db.t4g.micro" # Cheap, ARM-based instance for Dev
   allocated_storage      = 20
   storage_type           = "gp3"
+  apply_immediately      = true
   
   username               = "dbadmin"
   password               = random_password.db_password.result
