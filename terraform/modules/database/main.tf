@@ -63,6 +63,8 @@ resource "aws_db_instance" "main" {
   allocated_storage      = 20
   storage_type           = "gp3"
   apply_immediately      = true
+
+  db_name                = "statuspage"
   
   username               = "dbadmin"
   password               = random_password.db_password.result
