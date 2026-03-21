@@ -327,7 +327,7 @@ jobs:
             --task-definition $TASK_DEF_ARN \
             --launch-type FARGATE \
             --network-configuration "$NETWORK_CONFIG" \
-            --overrides '{"containerOverrides": [{"name": "django-app", "command": ["python", "statuspage/manage.py", "migrate", "--noinput"]}]}' \
+            --overrides '{"containerOverrides": [{"name": "django-app", "command": ["sh", "-c", "for i in 1 2 3 4 5; do python statuspage/manage.py migrate --noinput && exit 0 || sleep 15; done; exit 1"]}]}' \
             --query 'tasks[0].taskArn' --output text)
 
           echo "Waiting for migration task ($TASK_ARN) to complete..."
@@ -485,7 +485,7 @@ jobs:
 
           NETWORK_CONFIG=$(aws ecs describe-services --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service --query 'services[0].networkConfiguration' --output json)
 
-          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --task-definition $TASK_DEF_ARN --launch-type FARGATE --network-configuration "$NETWORK_CONFIG" --overrides '{"containerOverrides": [{"name": "django-app", "command": ["python", "statuspage/manage.py", "migrate", "--noinput"]}]}' --query 'tasks[0].taskArn' --output text)
+          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --task-definition $TASK_DEF_ARN --launch-type FARGATE --network-configuration "$NETWORK_CONFIG" --overrides '{"containerOverrides": [{"name": "django-app", "command": ["sh", "-c", "for i in 1 2 3 4 5; do python statuspage/manage.py migrate --noinput && exit 0 || sleep 15; done; exit 1"]}]}' --query 'tasks[0].taskArn' --output text)
           aws ecs wait tasks-stopped --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN
 
           EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
@@ -621,7 +621,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        
+
       - name: Set Prod ECR Image URI
         run: echo "ECR_PROD_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/st-status-page-app:${{ env.SEMVER_TAG }}" >> $GITHUB_ENV 
 
@@ -688,7 +688,7 @@ jobs:
 
           NETWORK_CONFIG=$(aws ecs describe-services --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --services ${{ env.ENVIRONMENT }}-django-service --query 'services[0].networkConfiguration' --output json)
 
-          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --task-definition $TASK_DEF_ARN --launch-type FARGATE --network-configuration "$NETWORK_CONFIG" --overrides '{"containerOverrides": [{"name": "django-app", "command": ["python", "statuspage/manage.py", "migrate", "--noinput"]}]}' --query 'tasks[0].taskArn' --output text)
+          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --task-definition $TASK_DEF_ARN --launch-type FARGATE --network-configuration "$NETWORK_CONFIG" --overrides '{"containerOverrides": [{"name": "django-app", "command": ["sh", "-c", "for i in 1 2 3 4 5; do python statuspage/manage.py migrate --noinput && exit 0 || sleep 15; done; exit 1"]}]}' --query 'tasks[0].taskArn' --output text)
           aws ecs wait tasks-stopped --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN
 
           EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
