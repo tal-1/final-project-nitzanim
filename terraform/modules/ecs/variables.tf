@@ -50,23 +50,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-
-variable "db_host" {
-  description = "The endpoint URL of the RDS instance"
-  type        = string
-}
-
-variable "db_name" {
-  description = "The name of the database"
-  type        = string
-}
-
-variable "db_user" {
-  description = "The database username"
-  type        = string
-}
-
-variable "redis_host" {
-  description = "The endpoint URL of the Valkey/Redis cluster"
-  type        = string
-}
