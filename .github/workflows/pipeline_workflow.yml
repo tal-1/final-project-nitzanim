@@ -414,6 +414,10 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       # 15. Image Promotion (Re-tagging existing Dev image with SemVer)
       - name: Promote Docker Image
         run: |
@@ -548,6 +552,10 @@ jobs:
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+         id: login-ecr
+         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
