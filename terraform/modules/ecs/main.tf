@@ -133,6 +133,8 @@ resource "aws_ecs_service" "app" {
   desired_count   = 2 # Run 2 containers for high availability
   launch_type     = "FARGATE"
 
+  health_check_grace_period_seconds = 60
+
   network_configuration {
     subnets          = var.private_subnets
     security_groups  = [var.ecs_security_group]
