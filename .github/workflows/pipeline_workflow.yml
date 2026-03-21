@@ -444,6 +444,16 @@ jobs:
         working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
         run: terraform apply -auto-approve
 
+      - name: Re-Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Re-Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       # 17. Stage Static Assets Sync
       - name: Sync Static Assets to S3
         run: |
@@ -653,6 +663,16 @@ jobs:
         working-directory: ./terraform/environments/${{ env.ENVIRONMENT }}
         # Notice we are applying the EXACT plan we downloaded, so there are no surprises!
         run: terraform apply -auto-approve tfplan
+
+      - name: Re-Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Re-Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Sync Static Assets to S3
         run: |
