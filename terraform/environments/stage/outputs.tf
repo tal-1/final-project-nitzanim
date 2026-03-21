@@ -12,3 +12,8 @@ output "s3_bucket_name" {
   description = "The name of the S3 bucket holding the static files"
   value       = module.frontend.s3_bucket_name
 }
+
+output "cloudfront_distribution_id" {
+  description = "The ID of the CloudFront distribution"
+  value       = module.frontend.cloudfront_distribution_id
+}
