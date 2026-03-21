@@ -42,11 +42,11 @@ resource "aws_security_group" "cache" {
 # --- ALB Rules ---
 resource "aws_vpc_security_group_ingress_rule" "alb_http_cf" {
   security_group_id = aws_security_group.alb.id
-  description       = "HTTP from CloudFront"
-  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
+  description       = "HTTPS from CloudFront"
   from_port         = 80
   to_port           = 80
   ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
 }
 
 resource "aws_vpc_security_group_ingress_rule" "alb_https_cf" {

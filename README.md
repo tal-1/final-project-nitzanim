@@ -1,42 +1,131 @@
-<img width="1047" height="581" alt="image" src="https://github.com/user-attachments/assets/cc1d12a8-7000-4123-96b2-7be4c0f7a951" />
+# **pipeline-test**
+# ST Status Page: AWS Infrastructure
+
+![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+
+## Introduction
+Welcome to the ST Status Page project! This repository houses the Infrastructure as Code (IaC) written in **Terraform** to deploy a complete, highly available, and secure AWS cloud environment. 
+
+Our architecture is designed to run a containerized application using **Amazon ECS**, sitting behind an **Application Load Balancer (ALB)**, connected to a managed **Database**, and routed via **DNS**. The project is structured to support multiple environments (`dev`, `stage`, `prod`) using reusable Terraform modules.
+
+## Architecture Overview
+![Cloud Architecture Diagram](./Screenshots/Cloud-Architecture-HLD.png)
+
+### Core Modules
+To keep our code clean and reusable, our infrastructure is divided into the following modules:
+* **Networking**: Provisions the VPC, subnets, and routing.
+* **Security**: Manages Identity and Access Management (IAM) roles and Security Groups.
+* **ALB**: Sets up the Application Load Balancer to distribute traffic.
+* **ECS**: Configures the Elastic Container Service cluster and task definitions.
+* **Database**: Provisions the managed database layer.
+* **Frontend**: Manages the static assets or frontend application hosting.
+* **DNS**: Manages Route53 hosted zones and records.
+
+### Global Resources
+Some resources are shared across all environments:
+* **S3 Backend**: Stores our Terraform state securely.
+* **ECR**: Elastic Container Registry to store our Docker images.
+* **GitHub OIDC**: Allows GitHub Actions pipelines to securely deploy to AWS without hardcoding long-lived access keys.
+
+## Prerequisites
+To work with this repository locally, you need the following tools installed:
+* [Terraform](https://www.terraform.io/downloads.html) (v1.x+)
+* [AWS CLI](https://aws.amazon.com/cli/) configured with proper access rights (`aws configure`)
+* [Git](https://git-scm.com/)
+
+## Repository Structure
+![complete TF tree here](./TF-File-Structure)
+
+We follow a standard Terraform directory layout:
+```text
+terraform/
+├── environments/          # Environment-specific configurations
+│   ├── dev/               # Development environment
+│   ├── stage/             # Staging environment
+│   └── prod/              # Production environment
+├── global/                # Resources shared across all environments
+│   ├── ecr/               # Docker image registries
+│   ├── github_oidc/       # CI/CD authentication
+│   └── s3-backend/        # Remote state storage
+└── modules/               # Reusable infrastructure code
+    ├── alb/
+    ├── database/
+    ├── dns/
+    ├── ecs/
+    ├── frontend/
+    ├── networking/
+    └── security/
+```
+
+## Getting Started
+### Step 1: Initialize Global Resources
+Before deploying any environments, you must set up the global infrastructure (in the following order):
+
+- global/s3-backend
+- global/ecr & global/github_oidc
+- environments/dev
+- environments/stage
+- environments/prod
+
+regarding global/s3-backend:
+the backend configuration is currently wrapped in /* ... */ comments. Leave it commented out.
+Run terraform init and then terraform apply in the global/s3-backend folder. Terraform will create the bucket and DynamoDB table in AWS, and it will temporarily save the .tfstate file locally on your laptop.
+Once the resources are created, remove the /* and */ comments from backend.tf & Run terraform init again. Terraform will notice the change and ask: "Do you want to copy your local state into the new S3 bucket?". Type yes.
+
+**relevant commands:**
+- `terraform init`
+- `terraform validate`
+- `terraform plan`
+- `terraform apply`
+
+
+### Step 2: Cleanup
+**order of destruction (`terraform destroy`):**
+- environments/prod
+- environments/stage
+- environments/dev
+- global/ecr & global/github_oidc
+- global/s3-backend
+
+### **FYI**
+You should never run terraform init, plan, apply, or destroy directly inside the modules directory.
+- Modules are Blueprints: The folders inside modules/ (like networking, alb, database) are just reusable templates or blueprints. They define how a VPC or an Application Load Balancer should be built, but they don't specify where or for which environment.
+- Environments are the Builders: Your environments (environments/dev, environments/prod, etc.) are the actual implementations. If you look at environments/dev/main.tf, you will see that it "calls" the modules and passes specific variables to them (like telling the networking module to use a specific vpc_cidr for Dev).
+
+
+## CI/CD Pipeline
+
+Our Continuous Integration and Continuous Deployment (CI/CD) process is fully automated. 
+
+**[View our complete CI/CD Pipeline Design Diagram](./Pipeline/pipeline-design.md)**
+
+### Pipeline Stages:
+1. **Source:** A developer pushes code to the `main` branch or opens a Pull Request.
+2. **Continuous Integration (CI):**
+   * The pipeline automatically lints the code and runs unit tests.
+   * A new Docker image is built from the application code.
+3. **Delivery:** The built Docker image is securely pushed to **Amazon ECR** (Elastic Container Registry).
+4. **Continuous Deployment (CD):**
+   * The pipeline authenticates to AWS securely using **GitHub OIDC**.
+   * **Terraform** applies any infrastructure changes.
+   * The new Docker image is rolled out to the **Amazon ECS** cluster.
 
 
 
 
-Github Actions Pipeline
-
-1) GitHub runner setup - downloading the source code and installing the required python environment (Python 3.10).
-
-***developer pushes code to feature branch - tagged with commit id***
-
-2) code scanning (Linting - Flake8 + Bandit) - Flake8 catchs syntax errors. typos and style issues, Then Bandit scans out python code for security vulnerabilities (hardcoded passwords, SQL injection) before building the docker image.
-
-3) Unit Testing (Pytest) - Runs our fast, isolated python unit tests (Verifies Django app logic).
-
-4) Build & Container Scanning (Docker + Trivy) - builds the docker image (Django, Gunicorn and our code), tags the image with a unique Git Commit ID, Then Trivy scans it before pushing to AWS: ensures no vulnerable OS packages are introduced to the ECS cluster.
-
-***pipeline deploys image to dev environment***
-
-5) Secure AWS Authentication (OIDC) - instead of pushing the images to AWS using hard-coded access keys, we'll use OIDC which uses temporary signed tokens for pipeline runs.
-
-6) Pushing to AWS - 1. The pipeline pushes the Trivy-approved docker image to ECR.
-                    2. Rus python manage.py collectstatic to gather all CSS, JS and image files.
-                    3. Pushes the static files to our Dev S3 Bucket, updates the ECS Fargate                           orchestrator and clears the CloudFront cache.
-
-***dev merges code to main - tagged with SenVer (like v1.2.3). deploys image to stage environment***
-System Integration Testing (SIT) - with Pytest
-performance testing - with Locust
-
-7) ECS Deployment & Cache Invalidation - The pipeline runs a temporary one-off ECS task that executes python manage.py migrate to safely update out PS. Update the Dev ECS task definition with the new Commit ID image tag. Finally, execute a CloudFront invalidation so users instantly see any CSS or image changes you made.
-
-8) Stage Testing & Manual Production Release - The pipline deploys the v1.2.3 (semantic versioning) image like in step 7 but targets the Stage environment. Pytest fires automated tests against the live Stage URLs to make sure the application communicates properly with Redis and PS. Locust spins up virtual users and bombs the Stage environment to make sure the new code doesnt slow down the system under heavy load.
-
-9) Manual Approval - The pipline stops, A lead engineer gets an alert to review the SIT and locust results and clicks "Approve" in github.
-
-10) Production Release - Once approved the exact v1.2.3 image is deployed to Prod ECS, Prod DB is migrated and Prod CloudFront is invalidated.
 
 
-environments for code testing
 
-DEV environment - minimal resources, RDS on 1 AZ
-STAGE & PROD - full scale environments with more computing resources, RDS on 2 AZs
+
+
+
+
+
+
+
+
+
+
+

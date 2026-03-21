@@ -78,8 +78,8 @@ resource "aws_ecs_task_definition" "app" {
   family                   = local.task_family
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 256 # 0.25 vCPU (Minimum)
-  memory                   = 512 # 0.5 GB RAM (Minimum)
+  cpu                      = 512 # 0.5 vCPU (Minimum)
+  memory                   = 1024 # 1.0 GB RAM (Minimum)
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -97,7 +97,11 @@ resource "aws_ecs_task_definition" "app" {
     # Non-sensitive environment variables
     environment = [
       { name = "DB_HOST", value = var.db_endpoint },
-      { name = "REDIS_HOST", value = var.cache_endpoint }
+      { name = "DB_NAME", value = "statuspage" },
+      { name = "DB_USER", value = "dbadmin" },
+      { name = "DB_PORT", value = "5432" },
+      { name = "REDIS_HOST", value = var.cache_endpoint },
+      { name = "REDIS_PORT", value = "6379" }
     ]
 
     # Sensitive secrets injected securely!
@@ -129,6 +133,8 @@ resource "aws_ecs_service" "app" {
   desired_count   = 2 # Run 2 containers for high availability
   launch_type     = "FARGATE"
 
+  health_check_grace_period_seconds = 60
+
   network_configuration {
     subnets          = var.private_subnets
     security_groups  = [var.ecs_security_group]
@@ -142,4 +148,8 @@ resource "aws_ecs_service" "app" {
   }
 
   tags = var.tags
+  # once creating the service the very first time, TF completely ignores the task_definition version. Because TF is now "blind" to the task definition, GitHub Actions pipeline is free to update the task definition to v1.2.3, v1.2.4, etc., and TF will never try to interfere or roll it back during infrastructure syncs.
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 }

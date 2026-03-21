@@ -1,10 +1,6 @@
 terraform {
   backend "s3" {
-    bucket         = "st-status-page-tf-state-bucket"
-    key            = "environments/prod/terraform.tfstate"
-    region         = "us-east-1"
+    # leaving encrypt as true because its a static security best-practice
     encrypt        = true
-    # prevents two people or pipelines from making changes at the exact same time
-    dynamodb_table = "terraform-state-locks"
   }
 }

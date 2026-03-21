@@ -6,7 +6,7 @@ output "db_endpoint" {
 
 output "cache_endpoint" {
   description = "The connection endpoint for ElastiCache Valkey"
-  value       = aws_elasticache_cluster.main.cache_nodes[0].address
+  value       = aws_elasticache_replication_group.main.primary_endpoint_address
 }
 
 output "db_password_secret_arn" {

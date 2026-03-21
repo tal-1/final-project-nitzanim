@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 # ==========================================
 # 1. S3 Bucket (For Django Static/Media Files)
 # ==========================================
@@ -26,12 +28,15 @@ resource "aws_cloudfront_origin_access_control" "s3_oac" {
   signing_protocol                  = "sigv4"
 }
 
-# Attach the policy to the S3 bucket to accept the OAC badge
+# Attaches the policy to the S3 bucket to accept the OAC badge
 resource "aws_s3_bucket_policy" "static_access" {
   bucket = aws_s3_bucket.static.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
+    Statement = [
+    # prevents GitHub actions having AdministratorAccess on S3 #
+      # --- STATEMENT 1: CloudFront Read Access (OAC) ---
+      {
       Effect    = "Allow"
       Principal = { Service = "cloudfront.amazonaws.com" }
       Action    = "s3:GetObject"
@@ -39,7 +44,16 @@ resource "aws_s3_bucket_policy" "static_access" {
       Condition = {
         StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.main.arn }
       }
-    }]
+    },
+    # --- STATEMENT 2: GitHub Actions Write Access ---
+    {
+        Effect    = "Allow"
+        # Notice we construct the ARN using the data.aws_caller_identity below
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/github-actions-terraform-role" }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.static.arn}/*"
+      }
+    ]
   })
 }
 

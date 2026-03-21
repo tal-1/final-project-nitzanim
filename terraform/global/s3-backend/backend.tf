@@ -8,14 +8,10 @@
 #    local state into the new S3 bucket?" You say "yes".
 # ==============================================================================
 
-/*
 terraform {
   backend "s3" {
     bucket         = "st-status-page-tf-state-bucket"  # Change to your actual bucket name
     key            = "global/s3-backend/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "st-status-page-tf-locks"         # Change to your actual table name
     encrypt        = true
   }
 }
-*/

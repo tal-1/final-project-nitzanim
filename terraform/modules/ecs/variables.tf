@@ -28,7 +28,7 @@ variable "cache_endpoint" {
   type        = string
 }
 
-# We need these to give your Execution Role strict, Least-Privilege access!
+# We need these to give the Execution Role strict, Least-Privilege access!
 variable "db_password_secret_arn" {
   description = "The ARN of the database password in Secrets Manager"
   type        = string
