@@ -78,8 +78,8 @@ resource "aws_ecs_task_definition" "app" {
   family                   = local.task_family
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 256 # 0.25 vCPU (Minimum)
-  memory                   = 512 # 0.5 GB RAM (Minimum)
+  cpu                      = 512 # 0.5 vCPU (Minimum)
+  memory                   = 1024 # 1.0 GB RAM (Minimum)
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
