@@ -42,10 +42,11 @@ module "ecs" {
   ecs_security_group  = module.security.ecs_sg_id
   target_group_arn    = module.alb.target_group_arn
   
-  # Passing Database info to the containers
+  # Passing Database and cache endpoints into the ECS module
   db_endpoint         = module.database.db_endpoint
   cache_endpoint      = module.database.cache_endpoint
 
+  # Pass Secrets Manager ARNs
   db_password_secret_arn = module.database.db_password_secret_arn
   django_secret_key_arn  = module.database.django_secret_key_arn
 
