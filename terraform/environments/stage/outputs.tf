@@ -30,7 +30,7 @@ output "ecs_service_name" {
 
 output "private_subnets" {
   description = "The private subnets for the ECS tasks"
-  value       = module.networking.private_subnets
+  value       = join(",", module.networking.private_subnets)
 }
 
 output "ecs_sg_id" {
