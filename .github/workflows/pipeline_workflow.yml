@@ -401,7 +401,7 @@ jobs:
       ENVIRONMENT: "stage"
       # We create a fake SemVer tag using the GitHub run number (e.g., v1.0.42)
       SEMVER_TAG: "v1.0.${{ github.run_number }}"
-      ECR_REPOSITORY: "st-status-page-app"
+.github/workflows/pipeline_workflow.yml      ECR_REPOSITORY: "st-status-page-app"
 
     steps:
       - name: Checkout Code
@@ -490,10 +490,28 @@ jobs:
 
       - name: Register Task Definition & Run Migration
         run: |
+          # 1. Fetch the Subnets and Security Group IDs from Terraform outputs
+          SUBNETS=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw private_subnets)
+          SG_ID=$(terraform -chdir=./terraform/environments/${{ env.ENVIRONMENT }} output -raw ecs_sg_id)
+
+          # 2. Build the exact network config string AWS expects
+          NETWORK_CONFIG="awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SG_ID],assignPublicIp=DISABLED}"
+          echo "Using Network Config: $NETWORK_CONFIG"
+
+          # 3. Register the new task definition
           TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://${{ steps.render-task-def.outputs.task-definition }} --query 'taskDefinition.taskDefinitionArn' --output text)
           echo "NEW_TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
-          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --task-definition $TASK_DEF_ARN --launch-type FARGATE --network-configuration "$NETWORK_CONFIG" --overrides '{"containerOverrides": [{"name": "django-app", "command": ["sh", "-c", "for i in 1 2 3 4 5; do python statuspage/manage.py migrate --noinput && exit 0 || sleep 15; done; exit 1"]}]}' --query 'tasks[0].taskArn' --output text)
+          # 4. Run the migration task with the correct Network Config
+          TASK_ARN=$(aws ecs run-task \
+            --cluster ${{ env.ENVIRONMENT }}-ecs-cluster \
+            --task-definition $TASK_DEF_ARN \
+            --launch-type FARGATE \
+            --network-configuration "$NETWORK_CONFIG" \
+            --overrides '{"containerOverrides": [{"name": "django-app", "command": ["sh", "-c", "for i in 1 2 3 4 5; do python statuspage/manage.py migrate --noinput && exit 0 || sleep 15; done; exit 1"]}]}' \
+            --query 'tasks[0].taskArn' \
+            --output text)
+
           aws ecs wait tasks-stopped --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN
 
           EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ENVIRONMENT }}-ecs-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
